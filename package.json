@@ -1,0 +1,18 @@
+{
+  "name": "social-media-jev-judge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.9.0"
+  },
+  "scripts": {
+    "test": "node --test",
+    "build:workflows": "node scripts/build-workflows.js",
+    "judge": "node --env-file-if-exists=.env src/cli.js"
+  },
+  "dependencies": {
+    "csv-parse": "7.0.3",
+    "csv-stringify": "6.9.0"
+  }
+}
