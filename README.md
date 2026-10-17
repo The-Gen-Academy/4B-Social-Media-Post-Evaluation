@@ -63,7 +63,7 @@ npm run build:workflows
 npm test
 ```
 
-Validation covers all three provider routes, score thresholds, malformed responses, retries, label isolation, compact CSV output and embedded n8n Code nodes. All 29 automated tests pass. A live CLI run through OpenRouter successfully scored all 12 posts with `typesafe/jev-1.13-20260917`. Jev agreed with 8 of 12 historical human labels; all posts still need review because separate reference facts were missing. An actual n8n import/run remains pending.
+Validation covers all three provider routes, score thresholds, malformed responses, retries, label isolation, compact CSV output and embedded n8n Code nodes. All 29 automated tests pass. A live CLI run through OpenRouter successfully scored all 12 posts with `typesafe/jev-1.13-20260917`. Jev agreed with 8 of 12 historical human labels; all posts still need review because separate reference facts were missing. A local Docker n8n 2.18.7 import and form-upload execution was verified on October 16, 2026: execution 269 completed in 3.651 seconds, with 1 PASS, 11 FAIL, 1 empty row SKIPPED and no API errors. Its exported CSV matches the earlier live CLI grades.
 
 ## Resources
 

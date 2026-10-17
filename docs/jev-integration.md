@@ -237,8 +237,11 @@ also recognize serialized boolean values (`1`/`0`). Both fixes have regression
 tests and are included in the regenerated n8n imports.
 
 The earlier October 15 Gateway verification error remains in hidden historical
-instructor tabs. Actual n8n import/execution requires your n8n instance and has
-not been performed.
+instructor tabs. The judge-only workflow was imported into local Docker n8n 2.18.7 and run
+through its CSV upload endpoint on October 16, 2026. Execution 269 completed
+in 3.651 seconds: 12 real Jev calls, 1 PASS, 11 FAIL, 1 empty row SKIPPED,
+and no API errors. The final CSV contains 13 rows and matches the previous
+live CLI grades, totals and decisions.
 
 Generated workflow source lives in `scripts/build-workflows.js`; don't edit
 embedded rubric copies directly. Run `npm run build:workflows` after changes to
