@@ -246,7 +246,7 @@
     {
       "parameters": {
         "formTitle": "Generate and Judge Social Media Posts",
-        "formDescription": "Upload your workshop CSV. n8n generates missing posts, then Jev scores each finished post and returns PASS/FAIL. Clear Model_Output to regenerate a post.",
+        "formDescription": "Upload the original input CSV from your generation exercise. n8n generates missing posts, then Jev scores each finished post and returns PASS/FAIL. To generate a fresh batch, rerun with the original input file. Populated posts are judged as-is.",
         "formFields": {
           "values": [
             {
@@ -506,7 +506,7 @@
       "parameters": {
         "width": 660,
         "height": 260,
-        "content": "## Generate → Jev scores → PASS / FAIL\nIn **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <OpenRouter API key>`.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Participants do not score manually. Include approved facts in User_Input.\n\n**Workshop Results** exports only 10 columns, matching the workbook. Full confidence, review flags and API evidence remain available in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun.\n\nDirect TypeSafe and Gateway setup are documented in docs/jev-integration.md."
+        "content": "## Upload → Jev scores → Download results\nOne-time setup: in **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <OpenRouter API key>`.\n\nFor judge-only, upload `linkedin_posts_output.csv` downloaded from the generation workflow, unchanged. No columns to fill, add or clear. The original prompt and generated post are already in the file.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Open the CSV from **Download Results CSV** to read the results. The workbook is optional. Full evidence remains in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun."
       }
     },
     {

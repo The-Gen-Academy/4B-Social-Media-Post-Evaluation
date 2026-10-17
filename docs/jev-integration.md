@@ -27,14 +27,19 @@ documents the shared response contract and service-specific credentials.
 
 ## Input contract
 
-For the workshop, export only **Jev Results** as UTF-8 CSV, with its first row as
-headers. The CLI accepts CSV, not the whole XLSX workbook. Quoted fields,
+For the workshop, upload **linkedin_posts_output.csv** downloaded from the
+existing generation workflow, unchanged. There is no workbook preparation,
+column filling or score clearing step. The CLI accepts CSV, not the whole XLSX workbook. Quoted fields,
 commas, newlines and a UTF-8 BOM are supported. Duplicate headers are rejected.
 
-Participants need only `Test_ID`, `User_Input`, and `Model_Output`; put approved
-facts and requirements in `User_Input`. Jev fills the five scores and code fills
-the total/status. The 10-column n8n export matches the workbook exactly. The
-additional fields below are optional instructor inputs. Historical human grades
+The generation export already carries `User_Input` and `Model_Output`, plus
+`Test_ID` when supplied in the generation input. A missing ID does not prevent
+judging; original row order is preserved. Jev fills the five scores and code fills
+the total/status. Open the results CSV directly; the workbook is optional.
+The 10-column n8n export matches the workbook exactly. The additional fields
+below are optional instructor inputs, not participant setup tasks. Supply any
+approved facts and requirements during the earlier generation exercise so they
+travel with the original request. Historical human grades
 remain in the hidden **Evaluation Log** and related instructor tabs.
 
 | Column | Use |
@@ -105,13 +110,17 @@ start inactive and have no credential IDs or keys.
 2. In the generation variant, also connect your OpenAI credential to both
    existing model nodes. Confirm the selected creator/critic model IDs are
    available in your account.
-3. Execute the form trigger and upload the Jev Results CSV. For existing
-   posts, **Social Media Jev Judge Only.json** avoids generation entirely.
+3. Execute **Social Media Jev Judge Only.json**, open **Upload Posts CSV**, upload
+   the generation workflow's **linkedin_posts_output.csv** unchanged, and submit.
 4. **Normalize Jev Result** retains the complete diagnostic result. The following
    **Workshop Results** node selects only the 10 participant columns. Download
-   the CSV binary from **Download Results CSV** and paste its data rows as values
-   at A2 in **Jev Results**. Clear `Model_Output` before rerunning generation for
-   a revised prompt; populated posts are judged without regeneration.
+   the CSV binary from **Download Results CSV** and open it directly in Excel or
+   Google Sheets. No workbook copy/paste or manual scoring is required.
+
+For a fresh generation run after revising the prompt, rerun the generation stage
+with its original input CSV, then upload the newly generated output to Jev.
+The optional combined generation-and-judge variant also accepts that original
+input CSV and judges the posts after generation. Populated posts are judged as-is.
 
 For direct TypeSafe, change **Call Jev** to
 `https://api.typesafe.ai/v1/systemone`, select a TypeSafe Header Auth credential,
@@ -203,7 +212,7 @@ For a calibration exercise:
 
 ## Validation status
 
-All 28 automated tests pass. They use fabricated API fixtures to check provider
+All 29 automated tests pass. They use fabricated API fixtures to check provider
 routing, thresholds, malformed responses, retries, CSV round trips, human-label
 isolation, rounded probability boundaries and embedded n8n Code nodes.
 

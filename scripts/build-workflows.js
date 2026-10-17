@@ -46,7 +46,7 @@ function judgeNodes() {
     }, [3000, 440]),
     node('Jev Setup', 'stickyNote', {
       width: 660, height: 260,
-      content: '## Generate → Jev scores → PASS / FAIL\nIn **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <OpenRouter API key>`.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Participants do not score manually. Include approved facts in User_Input.\n\n**Workshop Results** exports only 10 columns, matching the workbook. Full confidence, review flags and API evidence remain available in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun.\n\nDirect TypeSafe and Gateway setup are documented in docs/jev-integration.md.',
+      content: '## Upload → Jev scores → Download results\nOne-time setup: in **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <OpenRouter API key>`.\n\nFor judge-only, upload `linkedin_posts_output.csv` downloaded from the generation workflow, unchanged. No columns to fill, add or clear. The original prompt and generated post are already in the file.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Open the CSV from **Download Results CSV** to read the results. The workbook is optional. Full evidence remains in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun.',
     }, [2800, 240], { typeVersion: 1 }),
   ];
 }
@@ -101,12 +101,12 @@ outputNode.parameters.options.fileName = 'linkedin_posts_with_jev_scores.csv';
 outputNode.position = [3220, 440];
 const generationForm = generation.nodes.find(n => n.type === 'n8n-nodes-base.formTrigger');
 generationForm.parameters.formTitle = 'Generate and Judge Social Media Posts';
-generationForm.parameters.formDescription = 'Upload your workshop CSV. n8n generates missing posts, then Jev scores each finished post and returns PASS/FAIL. Clear Model_Output to regenerate a post.';
+generationForm.parameters.formDescription = 'Upload the original input CSV from your generation exercise. n8n generates missing posts, then Jev scores each finished post and returns PASS/FAIL. To generate a fresh batch, rerun with the original input file. Populated posts are judged as-is.';
 
 const form = structuredClone(original.nodes.find(n => n.type === 'n8n-nodes-base.formTrigger'));
 form.name = 'Upload Posts CSV';
 form.parameters.formTitle = 'Evaluate Social Media Posts with Jev';
-form.parameters.formDescription = 'Upload the workshop CSV with Test_ID, User_Input and Model_Output. Jev fills the five scores, total and PASS/FAIL. Include approved facts in User_Input.';
+form.parameters.formDescription = 'Upload linkedin_posts_output.csv downloaded from your post-generation workflow, unchanged. No columns to fill, add or clear. Jev scores the posts and returns a results CSV with five scores, a total and PASS/FAIL.';
 form.position = [2300, 600];
 const extract = structuredClone(original.nodes.find(n => n.type === 'n8n-nodes-base.extractFromFile'));
 extract.parameters.operation = 'csv';
