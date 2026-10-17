@@ -4,11 +4,13 @@ import { parseArgs } from 'node:util';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { callJev, resolveConnection } from './client.js';
+import { WORKSHOP_COLUMNS, workshopResult } from './workshop.js';
 import { buildRequest, normalizeResponse, blankResult, summarize, clean,
   DEFAULT_MODEL, DEFAULT_MIN_CONFIDENCE } from './judge.js';
 
 const usage = `Usage: npm run judge -- --input posts.csv [--output results/jev.csv]
   --dry-run                  Write request JSONL without calling Jev
+  --workshop                 Export only the 10 participant columns
   --model jev-1.13.0          Pin the model (or set JEV_MODEL)
   --min-confidence 0.7        Advisory review threshold, 0..1
   --report-only              Analyze an existing judged CSV without an API call
@@ -22,7 +24,7 @@ async function main() {
   const { values } = parseArgs({ options: {
     input: { type: 'string' }, output: { type: 'string', default: 'results/jev.csv' },
     model: { type: 'string' }, 'min-confidence': { type: 'string' },
-    'dry-run': { type: 'boolean' }, 'report-only': { type: 'boolean' }, help: { type: 'boolean' },
+    'dry-run': { type: 'boolean' }, workshop: { type: 'boolean' }, 'report-only': { type: 'boolean' }, help: { type: 'boolean' },
   } });
   if (values.help) { console.log(usage); return; }
   if (!values.input) throw new Error(usage);
@@ -63,6 +65,8 @@ async function main() {
   await writeFile(output, '', { flag: 'wx' });
   await writeFile(`${output}.summary.json`, '', { flag: 'wx' });
   const results = [];
+  const columns = values.workshop ? WORKSHOP_COLUMNS : [...new Set([...headers, ...Object.keys(blankResult(''))])];
+  const exportRows = () => values.workshop ? results.map(workshopResult) : results;
   for (const [index, row] of rows.entries()) {
     let evaluation;
     if (!clean(row.Model_Output)) evaluation = blankResult('SKIPPED', 'Model_Output is empty', confidence);
@@ -76,11 +80,10 @@ async function main() {
     }
     results.push({ ...row, ...evaluation });
     // Persist partial progress so an interrupted batch does not lose completed judgments.
-    const columns = [...new Set([...headers, ...Object.keys(blankResult(''))])];
-    await writeFile(output, stringify(results, { header: true, columns, escape_formulas: true }));
+    await writeFile(output, stringify(exportRows(), { header: true, columns, escape_formulas: true }));
     console.error(`Row ${index + 2}: ${evaluation.Jev_Status}`);
   }
-  if (!rows.length) await writeFile(output, stringify([], { header: true, columns: [...new Set([...headers, ...Object.keys(blankResult(''))])] }));
+  if (!rows.length) await writeFile(output, stringify([], { header: true, columns }));
   const summary = summarize(results);
   await writeFile(`${output}.summary.json`, JSON.stringify(summary, null, 2) + '\n');
   console.log(JSON.stringify(summary, null, 2));

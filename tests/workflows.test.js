@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { responseFor } from './fixtures.js';
+import { WORKSHOP_COLUMNS } from '../src/workshop.js';
 
 const load = name => JSON.parse(readFileSync(new URL(`../${name}`, import.meta.url), 'utf8'));
 const run = (node, globals) => vm.runInNewContext(`(function(){${node.parameters.jsCode}\n})()`, globals, { timeout: 1000 });
@@ -21,9 +22,10 @@ for (const filename of ['Social Media Jev Judge Only.json', 'Social Media Post G
     assert(w.nodes.every(n => !n.credentials));
     const http = w.nodes.find(n => n.name === 'Call Jev');
     assert.equal(http.parameters.genericAuthType, 'httpHeaderAuth');
-    assert.equal(http.parameters.url, 'https://ai-gateway.vercel.sh/typesafe/v1/systemone');
+    assert.equal(http.parameters.url, 'https://api.typesafe.ai/v1/systemone');
     assert.equal(http.onError, 'continueRegularOutput');
-    assert.equal(w.connections['Loop Over Posts for Jev'].main[0][0].node, 'Convert to Excel');
+    assert.equal(w.connections['Loop Over Posts for Jev'].main[0][0].node, 'Workshop Results');
+    assert.equal(w.connections['Workshop Results'].main[0][0].node, 'Download Results CSV');
     assert.equal(w.connections['Normalize Jev Result'].main[0][0].node, 'Loop Over Posts for Jev');
   });
 
@@ -38,7 +40,7 @@ for (const filename of ['Social Media Jev Judge Only.json', 'Social Media Post G
       const prepared = run(get('Prepare Jev Request'), { $json: row }).json;
       if (!prepared.hasPost) return run(get('Skip Empty Post'), { $json: prepared }).json;
       assert.equal(prepared.request.state.candidate_post, row.Model_Output);
-      assert.equal(prepared.request.model, 'typesafe-ai/jev-1.13.0');
+      assert.equal(prepared.request.model, 'jev-1.13.0');
       assert.equal(prepared.request.state.Status, undefined);
       return run(get('Normalize Jev Result'), {
         $json: index === 0 ? responseFor([3, 5, 5, 5, 5], 'hallucination') : responseFor(),
@@ -51,6 +53,12 @@ for (const filename of ['Social Media Jev Judge Only.json', 'Social Media Post G
     const failed = run(get('Normalize Jev Result'), { $json: { error: 'bad request' },
       $: () => ({ item: { json: { row: inputs[0], minConfidence: 0.7 } } }) }).json;
     assert.equal(failed.Jev_Status, 'ERROR'); assert.equal(failed.Jev_Total_Score, '');
+    const exported = run(get('Workshop Results'), { $input: { all: () => [...results, failed].map(json => ({json})) } });
+    for (const item of exported) assert.deepEqual(Object.keys(item.json), WORKSHOP_COLUMNS);
+    assert.deepEqual(Array.from(exported, item => item.json.Jev_Status), ['FAIL', 'PASS', 'SKIPPED', 'ERROR']);
+    assert.equal(exported[0].json.Jev_Total_Score, 23);
+    assert.equal(exported[3].json.Jev_Total_Score, '');
+    assert.equal(results[0].Jev_Raw_Response.length > 0, true, 'full evidence remains upstream');
   });
 }
 

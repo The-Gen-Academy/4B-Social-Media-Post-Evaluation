@@ -7,6 +7,7 @@ const read = name => readFile(resolve(root, name), 'utf8');
 const original = JSON.parse(await read('Social Media Post Generation Workflow.json'));
 // No external modules are required by n8n's sandbox. Both entrypoints use the same implementation.
 const core = (await read('src/judge.js')).replace(/^export /gm, '');
+const workshopCore = (await read('src/workshop.js')).replace(/^export /gm, '');
 const node = (name, type, parameters, position, extra = {}) => ({
   id: name.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-'), name,
   type: `n8n-nodes-base.${type}`, typeVersion: 2, position, parameters, ...extra,
@@ -18,14 +19,14 @@ function judgeNodes() {
     node('Loop Over Posts for Jev', 'splitInBatches', { batchSize: 1, options: {} }, [2800, 600], { typeVersion: 3 }),
     node('Prepare Jev Request', 'code', {
       mode: 'runOnceForEachItem',
-      jsCode: `${core}\n// Gateway model ID. For direct TypeSafe, use DEFAULT_MODEL and change the Call Jev URL and credential.\nconst model = 'typesafe-ai/' + DEFAULT_MODEL;\nconst minConfidence = DEFAULT_MIN_CONFIDENCE;\nconst row = $json;\nreturn {json: {row, minConfidence, hasPost: Boolean(clean(row.Model_Output)), request: clean(row.Model_Output) ? buildRequest(row, model) : null}};`,
+      jsCode: `${core}\n// Direct TypeSafe. For Gateway, use 'typesafe-ai/' + DEFAULT_MODEL and change the Call Jev URL and credential.\nconst model = DEFAULT_MODEL;\nconst minConfidence = DEFAULT_MIN_CONFIDENCE;\nconst row = $json;\nreturn {json: {row, minConfidence, hasPost: Boolean(clean(row.Model_Output)), request: clean(row.Model_Output) ? buildRequest(row, model) : null}};`,
     }, [3000, 720]),
     node('Has Post to Judge', 'if', {
       conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 },
         conditions: [{ id: 'has-post', leftValue: '={{ $json.hasPost }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' }, options: {},
     }, [3200, 720], { typeVersion: 2.2 }),
     node('Call Jev', 'httpRequest', {
-      method: 'POST', url: 'https://ai-gateway.vercel.sh/typesafe/v1/systemone',
+      method: 'POST', url: 'https://api.typesafe.ai/v1/systemone',
       authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
       sendBody: true, contentType: 'json', specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.request) }}',
       options: { timeout: 30000, response: { response: { responseFormat: 'json' } } },
@@ -39,15 +40,20 @@ function judgeNodes() {
       mode: 'runOnceForEachItem',
       jsCode: `${core}\nreturn {json: {...$json.row, ...blankResult('SKIPPED', 'Model_Output is empty', $json.minConfidence)}};`,
     }, [3400, 880]),
+    node('Workshop Results', 'code', {
+      mode: 'runOnceForAllItems',
+      jsCode: `${workshopCore}\nreturn $input.all().map(item => ({json: workshopResult(item.json)}));`,
+    }, [3000, 440]),
     node('Jev Setup', 'stickyNote', {
       width: 660, height: 260,
-      content: '## Jev judge setup\nUses Vercel AI Gateway. Select Header Auth in **Call Jev**: name `Authorization`, value `Bearer <AI Gateway API key>`. Gateway must have an enabled billing account.\n\nDirect TypeSafe: set URL to https://api.typesafe.ai/v1/systemone, use a TypeSafe key, and set model to DEFAULT_MODEL in **Prepare Jev Request**.\n\nAdd `Reference_Facts` for factual checks. Human labels stay separate. `Jev_Review_Required` flags missing references, uncertainty or conflicts. ERROR never becomes PASS. No publishing actions are included.',
+      content: '## Generate → Jev scores → PASS / FAIL\nIn **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <TypeSafe API key>`.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Participants do not score manually. Include approved facts in User_Input.\n\n**Workshop Results** exports only 10 columns, matching the workbook. Full confidence, review flags and API evidence remain available in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun.\n\nGateway setup is documented in docs/jev-integration.md.',
     }, [2800, 240], { typeVersion: 1 }),
   ];
 }
 function judgeConnections(finalNode) {
   return {
-    'Loop Over Posts for Jev': { main: [connect(finalNode), connect('Prepare Jev Request')] },
+    'Loop Over Posts for Jev': { main: [connect('Workshop Results'), connect('Prepare Jev Request')] },
+    'Workshop Results': { main: [connect(finalNode)] },
     'Prepare Jev Request': { main: [connect('Has Post to Judge')] },
     'Has Post to Judge': { main: [connect('Call Jev'), connect('Skip Empty Post')] },
     'Call Jev': { main: [connect('Normalize Jev Result')] },
@@ -86,17 +92,21 @@ return $('Extract First Sheet Data').all().map((item, index) => ({json: {
   ...item.json, Model_Output: byIndex.get(index) ?? item.json.Model_Output ?? ''
 }}));`;
 generation.connections['Prepare Excel Output Data'] = { main: [connect('Loop Over Posts for Jev')] };
-Object.assign(generation.connections, judgeConnections('Convert to Excel'));
 const outputNode = generation.nodes.find(n => n.name === 'Convert to Excel');
+outputNode.name = 'Download Results CSV';
+Object.assign(generation.connections, judgeConnections(outputNode.name));
 outputNode.parameters.operation = 'csv';
 generation.nodes.find(n => n.name === 'Extract First Sheet Data').parameters.operation = 'csv';
 outputNode.parameters.options.fileName = 'linkedin_posts_with_jev_scores.csv';
-outputNode.position = [3000, 500];
+outputNode.position = [3220, 440];
+const generationForm = generation.nodes.find(n => n.type === 'n8n-nodes-base.formTrigger');
+generationForm.parameters.formTitle = 'Generate and Judge Social Media Posts';
+generationForm.parameters.formDescription = 'Upload your workshop CSV. n8n generates missing posts, then Jev scores each finished post and returns PASS/FAIL. Clear Model_Output to regenerate a post.';
 
 const form = structuredClone(original.nodes.find(n => n.type === 'n8n-nodes-base.formTrigger'));
 form.name = 'Upload Posts CSV';
 form.parameters.formTitle = 'Evaluate Social Media Posts with Jev';
-form.parameters.formDescription = 'Upload CSV with Model_Output and optional human scores, Reference_Facts, Constraints and Persona.';
+form.parameters.formDescription = 'Upload the workshop CSV with Test_ID, User_Input and Model_Output. Jev fills the five scores, total and PASS/FAIL. Include approved facts in User_Input.';
 form.position = [2300, 600];
 const extract = structuredClone(original.nodes.find(n => n.type === 'n8n-nodes-base.extractFromFile'));
 extract.parameters.operation = 'csv';
@@ -106,7 +116,7 @@ const standalone = cleanWorkflow({ name: 'Social Media Jev Judge Only',
   connections: {
     'Upload Posts CSV': { main: [connect('Read Posts CSV')] },
     'Read Posts CSV': { main: [connect('Loop Over Posts for Jev')] },
-    ...judgeConnections('Convert to Excel'),
+    ...judgeConnections(outputNode.name),
   }, settings: { executionOrder: 'v1' },
 });
 for (const [name, workflow] of [

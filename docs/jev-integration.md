@@ -5,7 +5,7 @@
 Each nonempty `Model_Output` produces one TypeSafe-format request. The CLI supports
 direct TypeSafe at `https://api.typesafe.ai/v1/systemone` and Vercel AI Gateway at
 `https://ai-gateway.vercel.sh/typesafe/v1/systemone`. The n8n imports default to
-Gateway. The request contains a state and
+direct TypeSafe. The request contains a state and
 six independent questions: five **Score** questions and one failure-category
 **Choice**. There is no generative-model fallback. Jev does not produce prose
 feedback; the existing critic still provides revision advice in the generation
@@ -22,9 +22,15 @@ documents the shared response contract and service-specific credentials.
 
 ## Input contract
 
-Export only the **Evaluation Log** worksheet as UTF-8 CSV, with its first row as
+For the workshop, export only **Jev Results** as UTF-8 CSV, with its first row as
 headers. The CLI accepts CSV, not the whole XLSX workbook. Quoted fields,
 commas, newlines and a UTF-8 BOM are supported. Duplicate headers are rejected.
+
+Participants need only `Test_ID`, `User_Input`, and `Model_Output`; put approved
+facts and requirements in `User_Input`. Jev fills the five scores and code fills
+the total/status. The 10-column n8n export matches the workbook exactly. The
+additional fields below are optional instructor inputs. Historical human grades
+remain in the hidden **Evaluation Log** and related instructor tabs.
 
 | Column | Use |
 | --- | --- |
@@ -89,19 +95,23 @@ Import one of the two generated JSON files into your n8n instance. Both imports
 start inactive and have no credential IDs or keys.
 
 1. In **Call Jev**, create/select **Header Auth**. Header name: `Authorization`.
-   Header value: `Bearer <AI Gateway key>`. The default URL is Gateway's
-   TypeSafe-compatible endpoint and the model is `typesafe-ai/jev-1.13.0`.
+   Header value: `Bearer <TypeSafe key>`. The default URL is
+   `https://api.typesafe.ai/v1/systemone` and the model is `jev-1.13.0`.
 2. In the generation variant, also connect your OpenAI credential to both
    existing model nodes. Confirm the selected creator/critic model IDs are
    available in your account.
-3. Execute the form trigger and upload the Evaluation Log CSV. For existing
+3. Execute the form trigger and upload the Jev Results CSV. For existing
    posts, **Social Media Jev Judge Only.json** avoids generation entirely.
-4. Inspect **Normalize Jev Result**, then download the CSV binary from
-   **Convert to Excel**. Despite the inherited node name, this is CSV output.
+4. **Normalize Jev Result** retains the complete diagnostic result. The following
+   **Workshop Results** node selects only the 10 participant columns. Download
+   the CSV binary from **Download Results CSV** and paste its data rows as values
+   at A2 in **Jev Results**. Clear `Model_Output` before rerunning generation for
+   a revised prompt; populated posts are judged without regeneration.
 
-For a direct TypeSafe account, change **Call Jev** to
-`https://api.typesafe.ai/v1/systemone`, select a TypeSafe Header Auth credential,
-and set `const model = DEFAULT_MODEL` in **Prepare Jev Request**. Do not send a
+For Vercel AI Gateway, change **Call Jev** to
+`https://ai-gateway.vercel.sh/typesafe/v1/systemone`, select a Gateway Header Auth
+credential, and set `const model = 'typesafe-ai/' + DEFAULT_MODEL` in
+**Prepare Jev Request**. Do not send a
 Gateway key to the direct TypeSafe endpoint or vice versa.
 
 The generation variant routes populated rows around the creator and keeps them
@@ -129,6 +139,7 @@ npm ci
 cp .env.example .env
 # Edit .env to select a provider and set its matching key. Do not commit it.
 npm run judge -- --input posts.csv --output results/baseline.csv
+npm run judge -- --input posts.csv --output results/workshop.csv --workshop
 npm run judge -- --input posts.csv --output results/requests.csv --dry-run
 npm run judge -- --input results/baseline.csv --report-only
 ```
@@ -143,6 +154,11 @@ payment method. Enable it in the Vercel dashboard, then retry the failed rows
 with a new output name. The CLI reports that cause without exposing provider
 response bodies or credentials. Other 401/403 errors require checking credentials
 and account access. Authentication errors are not retried by the CLI.
+
+`--workshop` exports only the same 10 columns as n8n and the workbook. Omit the
+flag to preserve human labels and all diagnostic fields for calibration. The
+summary JSON is still computed from full in-memory results. A compact CSV no
+longer contains human labels, so later `--report-only` cannot compare them.
 
 The CLI never modifies the input or overwrites an existing output. Use a new
 output path for each run. It persists each completed row to the CSV and writes
@@ -182,7 +198,9 @@ fictional and does not contain measured Jev results. On October 15, 2026, a live
 request for the workbook's first post reached AI Gateway but returned
 `403 customer_verification_required`. The remaining posts were not submitted.
 No scores or agreement metrics are claimed from that attempt; the workbook's
-12 posts remain awaiting evaluation. All 12 currently lack `Reference_Facts`,
+12 posts remain without successful Jev results. The earlier error is preserved
+in the hidden instructor tabs; the simplified participant sheet starts with
+blank scores. All 12 currently lack `Reference_Facts`,
 so a successful run will still flag them for human review. Actual n8n
 import/execution requires your n8n instance and has not been performed.
 

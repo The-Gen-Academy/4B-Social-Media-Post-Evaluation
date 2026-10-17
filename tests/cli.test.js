@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { stringify } from 'csv-stringify/sync';
 import { parse } from 'csv-parse/sync';
+import { WORKSHOP_COLUMNS } from '../src/workshop.js';
 
 const cli = fileURLToPath(new URL('../src/cli.js', import.meta.url));
 const mock = fileURLToPath(new URL('./mock-provider.js', import.meta.url));
@@ -25,7 +26,7 @@ function setup(t) {
 }
 function invoke(args, live = false) {
   return spawnSync(process.execPath, [...(live ? ['--import', mock] : []), cli, ...args], {
-    encoding: 'utf8', env: { ...process.env, TYPESAFE_API_KEY: live ? 'mock-only-key' : '', JEV_MIN_CONFIDENCE: '0.7' },
+    encoding: 'utf8', env: { ...process.env, JEV_PROVIDER: 'typesafe', TYPESAFE_API_KEY: live ? 'mock-only-key' : '', JEV_MIN_CONFIDENCE: '0.7' },
   });
 }
 
@@ -45,6 +46,20 @@ test('CLI end-to-end with mocked HTTP: CSV roundtrip, human comparison, errors a
   assert.equal(readFileSync(output, 'utf8'), saved);
   const report = invoke(['--input', output, '--report-only']);
   assert.equal(report.status, 0); assert.equal(JSON.parse(report.stdout).compared, 2);
+});
+
+test('workshop export contains only the participant columns and preserves failure and error semantics', t => {
+  const {input, output} = setup(t);
+  const result = invoke(['--input', input, '--output', output, '--workshop'], true);
+  assert.equal(result.status, 1);
+  const rows = parse(readFileSync(output, 'utf8'), {columns:true});
+  assert.deepEqual(Object.keys(rows[0]), WORKSHOP_COLUMNS);
+  assert.deepEqual(rows.map(r => r.Jev_Status), ['PASS', 'FAIL', 'SKIPPED', 'ERROR']);
+  assert.equal(rows[3].Jev_Total_Score, '');
+  assert.equal(rows[0].Model_Output, inputRows[0].Model_Output);
+  assert.equal(rows[0].Human_Feedback, undefined);
+  assert.equal(rows[0].Jev_Raw_Response, undefined);
+  assert.equal(JSON.parse(readFileSync(`${output}.summary.json`, 'utf8')).compared, 2);
 });
 
 test('dry run does not need credentials and excludes blank posts and human labels', t => {
