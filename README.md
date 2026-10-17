@@ -10,9 +10,9 @@ n8n generates the post → Jev scores five dimensions → Code calculates PASS/F
 
 ## Workshop workbook
 
-Open the downloaded results CSV directly to see the grades. The **Jev Results** tab in
-[Social Media Post Evaluation.xlsx](Social%20Media%20Post%20Evaluation.xlsx) is an optional
-reference with the same 10 output columns:
+Open the downloaded results CSV directly to see the grades. For automatic comparison,
+use [Social Media Post Evaluation.xlsx](Social%20Media%20Post%20Evaluation.xlsx).
+Its **Jev Results** and **Rerun Results** tabs accept the same 10 output columns:
 
 | Columns | Who fills them |
 | --- | --- |
@@ -22,7 +22,55 @@ reference with the same 10 output columns:
 
 **PASS requires factual correctness ≥ 4 AND total score ≥ 20/25.** A post fails if either condition is not met. For example, 22/25 with factual correctness of 3 is still FAIL.
 
-The **Scoring Guide** tab explains the steps and rubric. The 12 original posts now contain actual Jev scores from the October 16, 2026 OpenRouter run: **1 PASS and 11 FAIL**. The empty template row was skipped. The workbook has total/status formulas for 100 posts. Original human grading and the previous detailed review are retained in hidden instructor tabs.
+The **Compare Runs** tab automatically shows human-versus-Jev agreement, flags
+disagreements, suggests which weak dimension to inspect, and compares rerun decisions.
+Choose a **Test_ID** at B8 to read the original human feedback and Jev scores.
+The baseline is already loaded: **1 PASS, 11 FAIL, and 8/12 agreement with human labels**.
+The empty template row was skipped. Original human grading and the previous detailed
+review remain in hidden instructor tabs.
+
+For **compare, improve and rerun**:
+
+1. Keep the first run in **Jev Results**. If using a different baseline, clear
+   A2:J101 and paste the entire first results CSV at A1, including its header.
+2. Review the highlighted disagreements. Improve the **generation prompt** in
+   **LinkedIn Creator Agent1 → Options → System Message**, then generate and judge
+   a new batch. Keep the Jev rubric fixed for this experiment.
+3. Clear **Rerun Results** A2:J101 and paste the entire new results CSV at A1,
+   including its header. Open the CSV in Excel/Sheets and copy its full table,
+   or import into that existing sheet. Do not replace the worksheet.
+4. Read **Compare Runs**. It calculates FAIL-to-PASS changes, PASS-to-FAIL
+   regressions, and how many previously failed/passing cases have new posts.
+   Rerunning the full batch is easiest. Include previously failed cases plus
+   at least one prior human PASS and one prior Jev PASS.
+
+No individual score columns need to be filled. The comparison supports 100 posts,
+matches by **Test_ID**, and checks that **User_Input** still identifies the same
+case. If IDs are generated from row order, keep the original full batch and order.
+Duplicate/unknown IDs and changed cases are flagged. Save each run as a separate
+workbook copy; clear the prior rerun before importing a shorter file.
+
+Human labels apply only to the exact original input and post. New posts are not
+assigned the old labels. **Post changed? = No** identifies an unchanged post,
+which does not count as a newly generated regression test. The **Scoring Guide**
+explains both generation improvement and judge calibration.
+
+### How to improve the judge prompt
+
+Change the judge only when reviewing a disagreement reveals an unclear rule.
+In **Prepare Jev Request → Code → QUESTIONS**, edit the relevant dimension's
+`instructions` or five `criteria`. For example, if the judge wrongly expects a
+link for every call to action, clarify: “A specific, relevant question counts as
+a CTA. Require a registration link only when the user asks for one.” Review the
+human label too; disagreement alone does not establish that Jev is wrong.
+
+Keep the posts fixed for this experiment. Rerun Jev on the **same original output
+CSV** and paste the new results into **Rerun Results**. The **Judge calibration**
+line compares human agreement before and after on the same unchanged, labeled
+posts. It excludes changed posts, missing labels and API errors. Inspect remaining
+disagreements and test posts not used to write the rule. Keep the pass thresholds
+fixed and record the changed rule/version. This edits evaluation instructions;
+it does not train the Jev model. No rubric change is applied by this workbook.
 
 ## Run the workshop in n8n
 
@@ -31,7 +79,7 @@ The **Scoring Guide** tab explains the steps and rubric. The 12 original posts n
 3. Download **linkedin_posts_output.csv** from your existing post-generation workflow. Execute the Jev workflow, open **Upload Posts CSV**, select that file unchanged, and submit the form. You do not need to open the workbook or edit the CSV first.
 4. Jev scores the final post. **Normalize Jev Result** calculates its total and PASS/FAIL. **Workshop Results** keeps only the 10 participant columns.
 5. Download the CSV from **Download Results CSV** and open it directly in Excel or Google Sheets. All scores, totals and PASS/FAIL decisions are already filled in. There is no required workbook copy/paste step.
-6. For a failed post, inspect the lowest scores, improve your generation prompt, and rerun the generation stage from its original input file. Upload its newly generated CSV to Jev unchanged. To judge the same posts again, upload the same generation output file. Save each result under a new name.
+6. For a failed post, inspect the lowest scores, improve your generation prompt, and rerun the generation stage from its original input file. Upload its newly generated CSV to Jev unchanged. Paste the full results into **Rerun Results** for automatic comparison. To test a judge change on the same posts, upload the same generation output file. Save each result under a new name.
 
 One-time setup is steps 1–2. Each evaluation run is **upload → submit → download results**.
 
