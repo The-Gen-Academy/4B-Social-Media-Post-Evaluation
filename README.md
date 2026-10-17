@@ -20,12 +20,12 @@ It has only 10 columns:
 
 **PASS requires factual correctness ≥ 4 AND total score ≥ 20/25.** A post fails if either condition is not met. For example, 22/25 with factual correctness of 3 is still FAIL.
 
-The **Scoring Guide** tab explains the steps and rubric. The 12 original posts are practice inputs; no successful Jev scores are prefilled. The workbook has total/status formulas for 100 posts. Original human grading and the previous detailed review are retained in hidden instructor tabs.
+The **Scoring Guide** tab explains the steps and rubric. The 12 original posts now contain actual Jev scores from the October 16, 2026 OpenRouter run: **1 PASS and 11 FAIL**. The empty template row was skipped. The workbook has total/status formulas for 100 posts. Original human grading and the previous detailed review are retained in hidden instructor tabs.
 
 ## Run the workshop in n8n
 
 1. Import [Social Media Post Generation with Jev Judge.json](Social%20Media%20Post%20Generation%20with%20Jev%20Judge.json). Connect your existing creator and critic model credentials.
-2. In **Call Jev**, select an HTTP Header Auth credential: name `Authorization`, value `Bearer <your TypeSafe API key>`. The workflow now defaults to direct TypeSafe and model `jev-1.13.0`.
+2. In **Call Jev**, select an HTTP Header Auth credential: name `Authorization`, value `Bearer <your OpenRouter API key>`. The workflow uses OpenRouter’s System One endpoint and model `typesafe/jev-1.13`. Get a key from [OpenRouter](https://openrouter.ai/settings/keys); no separate TypeSafe account is needed.
 3. Export **Jev Results** as CSV and upload it to the workflow. To generate a new post, provide `User_Input` and leave `Model_Output` empty. Include approved facts and any requirements in the prompt. Existing posts bypass generation and go to Jev.
 4. Jev scores the final post. **Normalize Jev Result** calculates its total and PASS/FAIL. **Workshop Results** keeps only the 10 participant columns.
 5. Download the CSV from **Download Results CSV**. Copy the data rows into **Jev Results**, starting at A2, using Paste Values. The column order matches. This replaces the template formulas with n8n's already calculated results.
@@ -44,13 +44,13 @@ The Node CLI can produce the same compact export:
 ```bash
 npm ci
 cp .env.example .env
-# Set TYPESAFE_API_KEY in .env using your editor.
+# Set OPENROUTER_API_KEY in .env using your editor.
 npm run judge -- --input posts.csv --output results/workshop.csv --workshop
 ```
 
 Omit `--workshop` for the full diagnostic CSV. Use a new output name for each run. The input is never overwritten and secrets stay in the ignored `.env` file or n8n credentials.
 
-For Vercel AI Gateway setup, detailed scoring criteria, optional source/context fields, score conversion, confidence handling and human-label calibration, see [the integration guide](docs/jev-integration.md).
+For direct TypeSafe or Vercel AI Gateway setup, detailed scoring criteria, optional source/context fields, score conversion, confidence handling and human-label calibration, see [the integration guide](docs/jev-integration.md).
 
 The shared rubric and score rules are in [src/judge.js](src/judge.js). The 10-column contract is in [src/workshop.js](src/workshop.js). Rebuild the n8n files after changing these sources:
 
@@ -59,7 +59,7 @@ npm run build:workflows
 npm test
 ```
 
-Validation covers both provider routes, score thresholds, malformed responses, retries, label isolation, compact CSV output and embedded n8n Code nodes. These tests use mocked responses. The earlier live Gateway attempt was blocked by account verification, and successful live scoring and an actual n8n import/run remain pending.
+Validation covers all three provider routes, score thresholds, malformed responses, retries, label isolation, compact CSV output and embedded n8n Code nodes. All 28 automated tests pass. A live CLI run through OpenRouter successfully scored all 12 posts with `typesafe/jev-1.13-20260917`. Jev agreed with 8 of 12 historical human labels; all posts still need review because separate reference facts were missing. An actual n8n import/run remains pending.
 
 ## Resources
 

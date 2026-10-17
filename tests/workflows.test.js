@@ -22,7 +22,7 @@ for (const filename of ['Social Media Jev Judge Only.json', 'Social Media Post G
     assert(w.nodes.every(n => !n.credentials));
     const http = w.nodes.find(n => n.name === 'Call Jev');
     assert.equal(http.parameters.genericAuthType, 'httpHeaderAuth');
-    assert.equal(http.parameters.url, 'https://api.typesafe.ai/v1/systemone');
+    assert.equal(http.parameters.url, 'https://openrouter.ai/api/v1/systemone');
     assert.equal(http.onError, 'continueRegularOutput');
     assert.equal(w.connections['Loop Over Posts for Jev'].main[0][0].node, 'Workshop Results');
     assert.equal(w.connections['Workshop Results'].main[0][0].node, 'Download Results CSV');
@@ -40,7 +40,7 @@ for (const filename of ['Social Media Jev Judge Only.json', 'Social Media Post G
       const prepared = run(get('Prepare Jev Request'), { $json: row }).json;
       if (!prepared.hasPost) return run(get('Skip Empty Post'), { $json: prepared }).json;
       assert.equal(prepared.request.state.candidate_post, row.Model_Output);
-      assert.equal(prepared.request.model, 'jev-1.13.0');
+      assert.equal(prepared.request.model, 'typesafe/jev-1.13');
       assert.equal(prepared.request.state.Status, undefined);
       return run(get('Normalize Jev Result'), {
         $json: index === 0 ? responseFor([3, 5, 5, 5, 5], 'hallucination') : responseFor(),

@@ -24,9 +24,9 @@ function setup(t) {
   writeFileSync(input, '\uFEFF' + stringify(inputRows, { header: true }));
   return { dir, input, output };
 }
-function invoke(args, live = false) {
+function invoke(args, live = false, env = {}) {
   return spawnSync(process.execPath, [...(live ? ['--import', mock] : []), cli, ...args], {
-    encoding: 'utf8', env: { ...process.env, JEV_PROVIDER: 'typesafe', TYPESAFE_API_KEY: live ? 'mock-only-key' : '', JEV_MIN_CONFIDENCE: '0.7' },
+    encoding: 'utf8', env: { ...process.env, JEV_PROVIDER: 'typesafe', TYPESAFE_API_KEY: live ? 'mock-only-key' : '', JEV_MODEL: '', JEV_MIN_CONFIDENCE: '0.7', ...env },
   });
 }
 
@@ -46,6 +46,16 @@ test('CLI end-to-end with mocked HTTP: CSV roundtrip, human comparison, errors a
   assert.equal(readFileSync(output, 'utf8'), saved);
   const report = invoke(['--input', output, '--report-only']);
   assert.equal(report.status, 0); assert.equal(JSON.parse(report.stdout).compared, 2);
+});
+
+test('CLI runs the OpenRouter route and selects its default model', t => {
+  const { input, output } = setup(t);
+  const result = invoke(['--provider', 'openrouter', '--input', input, '--output', output], true,
+    { OPENROUTER_API_KEY: 'mock-openrouter-key', MOCK_PROVIDER: 'openrouter' });
+  assert.equal(result.status, 1, result.stderr);
+  const rows = parse(readFileSync(output, 'utf8'), {columns: true});
+  assert.deepEqual(rows.map(r => r.Jev_Status), ['PASS', 'FAIL', 'SKIPPED', 'ERROR']);
+  assert.equal(rows[0].Jev_Model, 'typesafe/jev-1.13');
 });
 
 test('workshop export contains only the participant columns and preserves failure and error semantics', t => {

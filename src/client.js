@@ -1,12 +1,24 @@
+import { DEFAULT_MODEL } from './judge.js';
+
 export const ENDPOINT = 'https://api.typesafe.ai/v1/systemone';
 export const GATEWAY_ENDPOINT = 'https://ai-gateway.vercel.sh/typesafe/v1/systemone';
+export const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/systemone';
+const CONNECTIONS = {
+  typesafe: { endpoint: ENDPOINT, keyName: 'TYPESAFE_API_KEY', model: DEFAULT_MODEL },
+  gateway: { endpoint: GATEWAY_ENDPOINT, keyName: 'AI_GATEWAY_API_KEY', model: `typesafe-ai/${DEFAULT_MODEL}` },
+  openrouter: { endpoint: OPENROUTER_ENDPOINT, keyName: 'OPENROUTER_API_KEY', model: 'typesafe/jev-1.13' },
+};
+
+export function providerConfig(provider = process.env.JEV_PROVIDER || 'typesafe') {
+  if (!Object.hasOwn(CONNECTIONS, provider)) throw new Error('JEV_PROVIDER must be typesafe, gateway or openrouter.');
+  return CONNECTIONS[provider];
+}
 
 export function resolveConnection({ provider = process.env.JEV_PROVIDER || 'typesafe', apiKey } = {}) {
-  if (!['typesafe', 'gateway'].includes(provider)) throw new Error('JEV_PROVIDER must be typesafe or gateway.');
-  const keyName = provider === 'gateway' ? 'AI_GATEWAY_API_KEY' : 'TYPESAFE_API_KEY';
+  const { endpoint, keyName } = providerConfig(provider);
   const key = apiKey ?? process.env[keyName];
   if (!key?.trim()) throw new Error(`Set ${keyName} in .env or your environment before running Jev.`);
-  return { endpoint: provider === 'gateway' ? GATEWAY_ENDPOINT : ENDPOINT, apiKey: key.trim() };
+  return { endpoint, apiKey: key.trim() };
 }
 
 export async function callJev(request, {

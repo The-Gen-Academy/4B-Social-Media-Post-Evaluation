@@ -112,7 +112,9 @@ function distribution(answer, keys, name) {
     throw new Error(`Invalid ${name} probability keys`);
   }
   const sum = keys.reduce((total, key) => total + bounded(p[key], 0, 1, `${name} probability`), 0);
-  if (Math.abs(sum - 1) > 0.01) throw new Error(`Invalid ${name} probability sum`);
+  // Provider probabilities are rounded; allow the intended 0.01 boundary
+  // without rejecting 0.99 because of floating-point subtraction noise.
+  if (Math.abs(sum - 1) > 0.01 + 1e-12) throw new Error(`Invalid ${name} probability sum`);
   bounded(answer.confidence, 0, 1, `${name} confidence`);
   return p;
 }
@@ -215,7 +217,8 @@ export function summarize(rows) {
     if (judged) summary.evaluated++;
     if (row.Jev_Status === 'ERROR') summary.errors++;
     if (row.Jev_Status === 'SKIPPED') summary.skipped++;
-    if (row.Jev_Review_Required === true || row.Jev_Review_Required === 'true') summary.review_required++;
+    // csv-stringify serializes booleans as 1/0; accept those on report-only reruns.
+    if ([true, 'true', 1, '1'].includes(row.Jev_Review_Required)) summary.review_required++;
     const human = clean(row.Status).toUpperCase();
     if (!human) return;
     if (!['PASS', 'FAIL'].includes(human)) { summary.invalid_human_labels++; return; }

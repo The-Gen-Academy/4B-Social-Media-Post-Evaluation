@@ -82,6 +82,17 @@ test('rejects malformed provider responses rather than manufacturing scores', ()
   }
 });
 
+test('rounded probabilities accept the 0.99 and 1.01 boundaries but reject 0.98 and 1.02', () => {
+  for (const [none, valid] of [[0.68, true], [0.70, true], [0.67, false], [0.71, false]]) {
+    const response = responseFor();
+    response.answers.Failure_Category.probabilities = {
+      hallucination: 0.25, low_value: 0.04, non_compliance: 0.02, poor_framing: 0, none,
+    };
+    if (valid) assert.equal(normalizeResponse(response, row).Jev_Status, 'PASS');
+    else assert.throws(() => normalizeResponse(response, row), /probability sum/);
+  }
+});
+
 test('agreement excludes blanks, invalid labels and provider errors; reports false passes/fails', () => {
   const summary = summarize([
     { Status: 'Pass', Jev_Status: 'PASS' },
@@ -98,4 +109,9 @@ test('agreement excludes blanks, invalid labels and provider errors; reports fal
   assert.equal(summary.false_fails, 1);
   assert.equal(summary.invalid_human_labels, 1);
   assert.equal(summarize([]).agreement, null);
+});
+
+test('review counts survive CSV boolean serialization', () => {
+  const rows = [true, 'true', 1, '1', false, 'false', 0, '0', ''].map(value => ({Jev_Review_Required: value}));
+  assert.equal(summarize(rows).review_required, 4);
 });

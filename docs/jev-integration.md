@@ -3,20 +3,25 @@
 ## What runs
 
 Each nonempty `Model_Output` produces one TypeSafe-format request. The CLI supports
-direct TypeSafe at `https://api.typesafe.ai/v1/systemone` and Vercel AI Gateway at
+OpenRouter at `https://openrouter.ai/api/v1/systemone`, direct TypeSafe at
+`https://api.typesafe.ai/v1/systemone`, and Vercel AI Gateway at
 `https://ai-gateway.vercel.sh/typesafe/v1/systemone`. The n8n imports default to
-direct TypeSafe. The request contains a state and
+OpenRouter. The request contains a state and
 six independent questions: five **Score** questions and one failure-category
 **Choice**. There is no generative-model fallback. Jev does not produce prose
 feedback; the existing critic still provides revision advice in the generation
 workflow.
 
 The implementation uses the [official HTTP contract](https://docs.typesafe.ai/api).
-It pins `jev-1.13.0`, which the [model documentation](https://docs.typesafe.ai/models)
-lists as the stable alias target as of October 15, 2026. Use `JEV_MODEL` locally,
-or edit the `model` variable in **Prepare Jev Request**, to evaluate a different
-version. Gateway uses the verified model ID `typesafe-ai/jev-1.13.0`; direct
-TypeSafe uses `jev-1.13.0`. Record new runs separately when switching models.
+The workshop pins the Jev 1.13 family: OpenRouter uses `typesafe/jev-1.13`,
+direct TypeSafe uses `jev-1.13.0`, and Gateway uses `typesafe-ai/jev-1.13.0`.
+OpenRouter's [System One documentation](https://openrouter.ai/docs/guides/community/typesafe-sdk)
+confirms the same request/response format and OpenRouter Bearer authentication.
+No separate TypeSafe key or account is required for that route. This uses the
+System One endpoint, not chat completions or Jev Router. OpenRouter's response
+records the actual model served and includes `usage.cost` in the raw response.
+Use `JEV_MODEL` locally, or edit the `model` variable in **Prepare Jev Request**,
+to evaluate a different version. Record new runs separately when switching models.
 The [Gateway compatibility guide](https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe)
 documents the shared response contract and service-specific credentials.
 
@@ -95,8 +100,8 @@ Import one of the two generated JSON files into your n8n instance. Both imports
 start inactive and have no credential IDs or keys.
 
 1. In **Call Jev**, create/select **Header Auth**. Header name: `Authorization`.
-   Header value: `Bearer <TypeSafe key>`. The default URL is
-   `https://api.typesafe.ai/v1/systemone` and the model is `jev-1.13.0`.
+   Header value: `Bearer <OpenRouter key>`. The default URL is
+   `https://openrouter.ai/api/v1/systemone` and the model is `typesafe/jev-1.13`.
 2. In the generation variant, also connect your OpenAI credential to both
    existing model nodes. Confirm the selected creator/critic model IDs are
    available in your account.
@@ -108,11 +113,15 @@ start inactive and have no credential IDs or keys.
    at A2 in **Jev Results**. Clear `Model_Output` before rerunning generation for
    a revised prompt; populated posts are judged without regeneration.
 
+For direct TypeSafe, change **Call Jev** to
+`https://api.typesafe.ai/v1/systemone`, select a TypeSafe Header Auth credential,
+and set `const model = DEFAULT_MODEL` in **Prepare Jev Request**.
+
 For Vercel AI Gateway, change **Call Jev** to
 `https://ai-gateway.vercel.sh/typesafe/v1/systemone`, select a Gateway Header Auth
 credential, and set `const model = 'typesafe-ai/' + DEFAULT_MODEL` in
-**Prepare Jev Request**. Do not send a
-Gateway key to the direct TypeSafe endpoint or vice versa.
+**Prepare Jev Request**. Use only the credential belonging to the selected
+provider; keys are not interchangeable.
 
 The generation variant routes populated rows around the creator and keeps them
 for judging. Rows with neither topic nor post bypass generation and become
@@ -144,9 +153,12 @@ npm run judge -- --input posts.csv --output results/requests.csv --dry-run
 npm run judge -- --input results/baseline.csv --report-only
 ```
 
-For Gateway, set `JEV_PROVIDER=gateway`, `AI_GATEWAY_API_KEY`, and
+For OpenRouter, set `JEV_PROVIDER=openrouter`, `OPENROUTER_API_KEY`, and
+`JEV_MODEL=typesafe/jev-1.13`. For Gateway, set `JEV_PROVIDER=gateway`, `AI_GATEWAY_API_KEY`, and
 `JEV_MODEL=typesafe-ai/jev-1.13.0`. For direct TypeSafe, set
 `JEV_PROVIDER=typesafe`, `TYPESAFE_API_KEY`, and `JEV_MODEL=jev-1.13.0`.
+Leave `JEV_MODEL` blank to use the selected provider’s default model ID.
+`--provider` and `--model` override the corresponding environment settings.
 The client uses only the credential belonging to the selected provider.
 
 Gateway `403 customer_verification_required` means the account requires a valid
@@ -191,18 +203,33 @@ For a calibration exercise:
 
 ## Validation status
 
-Automated tests use fabricated API fixtures to verify the HTTP contract,
-thresholds, malformed response handling, retries, CSV round trips, human-label
-isolation, and n8n Code node execution. They do not call Jev. The example CSV is
-fictional and does not contain measured Jev results. On October 15, 2026, a live
-request for the workbook's first post reached AI Gateway but returned
-`403 customer_verification_required`. The remaining posts were not submitted.
-No scores or agreement metrics are claimed from that attempt; the workbook's
-12 posts remain without successful Jev results. The earlier error is preserved
-in the hidden instructor tabs; the simplified participant sheet starts with
-blank scores. All 12 currently lack `Reference_Facts`,
-so a successful run will still flag them for human review. Actual n8n
-import/execution requires your n8n instance and has not been performed.
+All 28 automated tests pass. They use fabricated API fixtures to check provider
+routing, thresholds, malformed responses, retries, CSV round trips, human-label
+isolation, rounded probability boundaries and embedded n8n Code nodes.
+
+On October 16, 2026, a live CLI run through OpenRouter scored all 12 workbook
+posts with `typesafe/jev-1.13-20260917`: **1 PASS, 11 FAIL, no unresolved errors**.
+The empty thirteenth row was skipped. The workbook contains those actual scores,
+with its existing formulas independently reproducing every total and decision.
+Raw responses and compact/full CSV exports are retained in the ignored local
+`results/openrouter-live-2026-10-16/` directory.
+
+Jev agreed with 8 of the 12 historical human labels. Relative to those labels,
+there was one false pass (POST_007) and three false fails (POST_001, POST_003,
+POST_010). This small demonstration does not establish judge reliability.
+All 12 inputs lack separate `Reference_Facts`, so all results retain the advisory
+review flag. The rubric and pass/fail thresholds were not tuned to these labels.
+
+The live run exposed a floating-point boundary check that rejected probabilities
+summing to 0.99. One request was repeated to capture the raw response; after the
+validator fix, that saved response was reprocessed without another API call.
+The intended 0.01 probability-sum tolerance is unchanged. CSV review counts now
+also recognize serialized boolean values (`1`/`0`). Both fixes have regression
+tests and are included in the regenerated n8n imports.
+
+The earlier October 15 Gateway verification error remains in hidden historical
+instructor tabs. Actual n8n import/execution requires your n8n instance and has
+not been performed.
 
 Generated workflow source lives in `scripts/build-workflows.js`; don't edit
 embedded rubric copies directly. Run `npm run build:workflows` after changes to

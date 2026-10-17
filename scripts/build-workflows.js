@@ -19,14 +19,14 @@ function judgeNodes() {
     node('Loop Over Posts for Jev', 'splitInBatches', { batchSize: 1, options: {} }, [2800, 600], { typeVersion: 3 }),
     node('Prepare Jev Request', 'code', {
       mode: 'runOnceForEachItem',
-      jsCode: `${core}\n// Direct TypeSafe. For Gateway, use 'typesafe-ai/' + DEFAULT_MODEL and change the Call Jev URL and credential.\nconst model = DEFAULT_MODEL;\nconst minConfidence = DEFAULT_MIN_CONFIDENCE;\nconst row = $json;\nreturn {json: {row, minConfidence, hasPost: Boolean(clean(row.Model_Output)), request: clean(row.Model_Output) ? buildRequest(row, model) : null}};`,
+      jsCode: `${core}\n// OpenRouter System One. Change the URL, model and credential together when switching providers.\nconst model = 'typesafe/jev-1.13';\nconst minConfidence = DEFAULT_MIN_CONFIDENCE;\nconst row = $json;\nreturn {json: {row, minConfidence, hasPost: Boolean(clean(row.Model_Output)), request: clean(row.Model_Output) ? buildRequest(row, model) : null}};`,
     }, [3000, 720]),
     node('Has Post to Judge', 'if', {
       conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict', version: 2 },
         conditions: [{ id: 'has-post', leftValue: '={{ $json.hasPost }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' }, options: {},
     }, [3200, 720], { typeVersion: 2.2 }),
     node('Call Jev', 'httpRequest', {
-      method: 'POST', url: 'https://api.typesafe.ai/v1/systemone',
+      method: 'POST', url: 'https://openrouter.ai/api/v1/systemone',
       authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
       sendBody: true, contentType: 'json', specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.request) }}',
       options: { timeout: 30000, response: { response: { responseFormat: 'json' } } },
@@ -46,7 +46,7 @@ function judgeNodes() {
     }, [3000, 440]),
     node('Jev Setup', 'stickyNote', {
       width: 660, height: 260,
-      content: '## Generate → Jev scores → PASS / FAIL\nIn **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <TypeSafe API key>`.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Participants do not score manually. Include approved facts in User_Input.\n\n**Workshop Results** exports only 10 columns, matching the workbook. Full confidence, review flags and API evidence remain available in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun.\n\nGateway setup is documented in docs/jev-integration.md.',
+      content: '## Generate → Jev scores → PASS / FAIL\nIn **Call Jev**, select Header Auth: name `Authorization`, value `Bearer <OpenRouter API key>`.\n\nJev fills five 1–5 scores. PASS requires factual correctness ≥ 4 and total ≥ 20/25. Participants do not score manually. Include approved facts in User_Input.\n\n**Workshop Results** exports only 10 columns, matching the workbook. Full confidence, review flags and API evidence remain available in **Normalize Jev Result**. ERROR means no judgment; fix the API call and rerun.\n\nDirect TypeSafe and Gateway setup are documented in docs/jev-integration.md.',
     }, [2800, 240], { typeVersion: 1 }),
   ];
 }

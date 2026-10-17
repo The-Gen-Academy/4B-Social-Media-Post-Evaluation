@@ -3,15 +3,16 @@ import { resolve, dirname } from 'node:path';
 import { parseArgs } from 'node:util';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
-import { callJev, resolveConnection } from './client.js';
+import { callJev, resolveConnection, providerConfig } from './client.js';
 import { WORKSHOP_COLUMNS, workshopResult } from './workshop.js';
 import { buildRequest, normalizeResponse, blankResult, summarize, clean,
-  DEFAULT_MODEL, DEFAULT_MIN_CONFIDENCE } from './judge.js';
+  DEFAULT_MIN_CONFIDENCE } from './judge.js';
 
 const usage = `Usage: npm run judge -- --input posts.csv [--output results/jev.csv]
   --dry-run                  Write request JSONL without calling Jev
   --workshop                 Export only the 10 participant columns
-  --model jev-1.13.0          Pin the model (or set JEV_MODEL)
+  --provider openrouter      Select typesafe, gateway or openrouter (or JEV_PROVIDER)
+  --model typesafe/jev-1.13   Override the provider's default model (or JEV_MODEL)
   --min-confidence 0.7        Advisory review threshold, 0..1
   --report-only              Analyze an existing judged CSV without an API call
   --help                     Show usage
@@ -23,7 +24,7 @@ Output paths must be new: existing files are never overwritten.`;
 async function main() {
   const { values } = parseArgs({ options: {
     input: { type: 'string' }, output: { type: 'string', default: 'results/jev.csv' },
-    model: { type: 'string' }, 'min-confidence': { type: 'string' },
+    provider: { type: 'string' }, model: { type: 'string' }, 'min-confidence': { type: 'string' },
     'dry-run': { type: 'boolean' }, workshop: { type: 'boolean' }, 'report-only': { type: 'boolean' }, help: { type: 'boolean' },
   } });
   if (values.help) { console.log(usage); return; }
@@ -31,7 +32,8 @@ async function main() {
   if (values['dry-run'] && values['report-only']) throw new Error('Choose either --dry-run or --report-only.');
   const input = resolve(values.input), output = resolve(values.output);
   if (input === output) throw new Error('Output must differ from input.');
-  const model = values.model ?? process.env.JEV_MODEL ?? DEFAULT_MODEL;
+  const provider = values.provider ?? (process.env.JEV_PROVIDER || 'typesafe');
+  const model = values.model ?? (process.env.JEV_MODEL || providerConfig(provider).model);
   const confidenceText = values['min-confidence'] ?? process.env.JEV_MIN_CONFIDENCE ?? String(DEFAULT_MIN_CONFIDENCE);
   const confidence = Number(confidenceText);
   if (!confidenceText.trim() || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
@@ -60,7 +62,7 @@ async function main() {
     console.log(`Dry run: ${requests.length} requests written to ${output}.requests.jsonl; no API calls.`);
     return;
   }
-  resolveConnection();
+  resolveConnection({ provider });
   // Reserve output names before making billable calls; each run retains its own evidence.
   await writeFile(output, '', { flag: 'wx' });
   await writeFile(`${output}.summary.json`, '', { flag: 'wx' });
@@ -72,7 +74,7 @@ async function main() {
     if (!clean(row.Model_Output)) evaluation = blankResult('SKIPPED', 'Model_Output is empty', confidence);
     else {
       try {
-        const response = await callJev(buildRequest(row, model));
+        const response = await callJev(buildRequest(row, model), { provider });
         evaluation = normalizeResponse(response, row, confidence);
       } catch (error) {
         evaluation = blankResult('ERROR', error.message, confidence);
