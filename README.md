@@ -8,6 +8,20 @@ No columns need to be filled, added or cleared for Jev.
 n8n generates the post → Jev scores five dimensions → Code calculates PASS/FAIL
 ```
 
+## Clinic intent classification experiments
+
+The added [clinic evaluation report](docs/clinic-intent-experiments.md) tests Jev
+on the workshop's 301 scheduling inputs, uses a generative LLM to review its
+outputs, classifies failure traces, and measures confidence-based escalation.
+The [n8n workflow](Clinic%20Intent%20Jev%20with%20LLM%20Escalation.json) accepts a
+CSV exported from **Golden Dataset Full**, with no individual columns to fill.
+
+In the October 20, 2026 live run, Jev matched 90.2% of the 286 consistent reference
+labels. Failure-category agreement was 46.2% on 52 labeled traces. Escalating
+confidence below 0.70 did not improve validation accuracy; the report explains
+the missed confident errors, reviewer errors and conflicting source labels.
+Use `npm run eval:intents -- --help` for the research harness.
+
 ## Workshop workbook
 
 Open the downloaded results CSV directly to see the grades. For automatic comparison,
