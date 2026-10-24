@@ -9,7 +9,9 @@
   "scripts": {
     "test": "node --test",
     "build:workflows": "node scripts/build-workflows.js",
-    "judge": "node --env-file-if-exists=.env src/cli.js"
+    "judge": "node --env-file-if-exists=.env src/cli.js",
+    "eval:intents": "node --env-file-if-exists=.env src/intent-eval-cli.js",
+    "build:intent-workflow": "node scripts/build-intent-workflow.js"
   },
   "dependencies": {
     "csv-parse": "7.0.3",
