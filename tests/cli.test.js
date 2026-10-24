@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,readFile,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join,resolve} from 'node:path';
+import {spawnSync} from 'node:child_process';
+import {stringify} from 'csv-stringify/sync';
+import {parse} from 'csv-parse/sync';
+import {row} from './fixtures.js';
+import {WORKSHOP_COLUMNS} from '../src/workshop.js';
+const run=args=>spawnSync(process.execPath,['--import',resolve('tests/mock-provider.js'),'src/cli.js',...args],{encoding:'utf8',env:{...process.env,JEV_PROVIDER:'openrouter',OPENROUTER_API_KEY:'mock-key'}});
+test('CLI round trip preserves human evidence, reports errors, and exports workbook contract',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'binary-eval-')),input=join(dir,'in.csv'),output=join(dir,'out.csv');
+  await writeFile(input,stringify([row,{...row,Test_ID:'CASE_002',Model_Output:'BAD post'},{...row,Test_ID:'CASE_003',Model_Output:'API_ERROR'},{...row,Test_ID:'CASE_004',Model_Output:''},{...row,Test_ID:'CASE_005',Context_Status:'NEEDS_CONTEXT'}],{header:true}));
+  const p=run(['--input',input,'--output',output,'--workshop']);assert.equal(p.status,1,p.stderr);
+  const result=parse(await readFile(output,'utf8'),{columns:true});
+  assert.deepEqual(Object.keys(result[0]),WORKSHOP_COLUMNS);assert.equal(result[0].Human_Critique,row.Human_Critique);
+  assert.deepEqual(result.map(r=>r.Jev_Run_Status),['OK','OK','ERROR','SKIPPED','NEEDS_CONTEXT']);
+  assert.equal(result[1].Jev_Decision,'FAIL');assert.equal(result[1].LLM_Decision,'PASS');
+  assert.equal(result[2].Jev_Decision,'');assert.equal(result[2].LLM_Critique,'');
+  assert.equal(run(['--input',input,'--output',output]).status,1);
+  assert.equal(run(['--input',output,'--report-only']).status,0);
+});
+test('dry run has no calls or current labels; duplicate identities are blocked',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'binary-dry-')),input=join(dir,'in.csv'),output=join(dir,'out');
+  await writeFile(input,stringify([row,row],{header:true}));
+  const p=run(['--input',input,'--output',output,'--dry-run']);assert.equal(p.status,0,p.stderr);
+  const requests=(await readFile(output+'.requests.jsonl','utf8')).trim().split('\n').map(JSON.parse);
+  assert(requests.every(r=>r.eligibility.status==='ERROR'&&!r.jev));
+});
