@@ -1,90 +1,100 @@
-# Current project walkthrough
+# Project walkthrough
 
-This written demo replaces the previous scoring demonstration. It covers the
-same files students will use for the binary publication-evaluation assignment.
+## 1. Prepare one case
 
-## 1. See what a useful evaluation looks like
+Start in Evaluation Log. Use one row per Test_ID. User_Input contains the whole
+brief, including source facts, so you do not need separate context columns:
 
-Open **Worked Examples** in the workbook. The examples are constructed reference
-cases, not measured model results:
+~~~text
+Write a LinkedIn post for beginning AI engineers.
+Explain one practical retrieval test, then ask a relevant question.
+Use at most 80 words.
 
-| Case | Human decision | Decisive evidence |
+Approved facts:
+Retrieval selects source passages for an answer. Irrelevant passages can leave
+an answer unsupported. No benchmark result or improvement percentage is supplied.
+Source: instructor-approved facts for this teaching example.
+~~~
+
+The exact **Approved facts:** heading lets the workflow find the evidence.
+Put audience and constraints before it. Add actual excerpts, not just URLs.
+If the task needs no external factual claims, state that under the heading.
+
+## 2. Generate and review
+
+Import Social Media Post Generation Workflow.json into n8n. Attach OpenRouter
+Header Auth to Generate Post. Export Evaluation Log as CSV and upload it through
+Upload Posts CSV. Download the output from Download Results CSV and paste its
+six data columns into Evaluation Log A:F.
+
+Read the post, write Human_Feedback, then select PASS or FAIL in Status.
+Do this yourself before viewing any automated opinion.
+
+| Post | Status | Critique |
 | --- | --- | --- |
-| DEMO_001 | PASS | Delivers two approved resources and their uses; no CTA is required by the brief. |
-| DEMO_002 | FAIL | Promises resources but names none and supplies no attachment. |
-| DEMO_003 | FAIL | Invents a 90% improvement claim absent from the approved facts. |
+| Gives a practical retrieval inspection step and a relevant closing question. | PASS | Delivers the requested test within the length limit; claims match the source facts. |
+| Claims retrieval improves accuracy by 40%. | FAIL | The source contains no benchmark supporting 40%; remove or substantiate the claim. |
+| Says retrieval matters but gives no test. | FAIL | Omits the practical inspection step requested in the brief. |
 
-The critique identifies evidence and why it matters. A fluent post can FAIL for
-an unsupported claim. A plain post can PASS while still allowing optional polish.
+These are teaching illustrations, not measured model results.
+If facts are missing, leave Status blank and explain what is needed in feedback.
+If a generation call fails, the row remains present with blank output/status and
+a Generation issue message. Inspect the n8n execution and retry after fixing it.
 
-## 2. Run the judge demo
+## 3. Find a failure pattern
 
-1. Download [examples/posts.csv](../examples/posts.csv). It contains the three
-   exact worked examples, context and human reference critiques.
-2. Import [Social Media Jev Judge Only.json](../Social%20Media%20Jev%20Judge%20Only.json)
-   into n8n. Create/select Header Auth on **Call Jev** and **Independent LLM Review**:
-   name `Authorization`, value `Bearer <OpenRouter API key>`.
-3. Execute the workflow and open **Upload Posts CSV**. Upload the CSV and submit.
-4. Inspect **Normalize Jev Result**: there is one `Jev_Decision`, not a set of
-   dimension grades. Inspect **Normalize Independent Review** for the separate
-   `LLM_Critique` and `LLM_Decision`.
-5. Download the CSV from **Download Results CSV**. Copy its data rows into a
-   temporary workbook copy's **Evaluation Log A:AI**. Preserve the header and
-   helper formulas in AJ:AN. Do not paste duplicate case/run rows.
-6. Set Summary Run_ID to `worked-example`, Judge_Version to `jev-publication-v2.0`,
-   and Judge_Split to `DEV`. Read the four confusion counts and both class-specific
-   rates. These three constructed examples are only a wiring demonstration.
+Give each FAIL one Failure_Category. In Failure Analysis, enter the same
+category text; Count updates automatically. Add a Suggested_Fix.
+Use Failure Traces for selected cases: quote the Evidence, inspect the n8n
+execution, distinguish a Likely_Cause from observation, and record a Proposed_Fix.
 
-The initial TRAIN example list is empty. The model may disagree with the human
-reference: inspect that disagreement instead of editing the label to match it.
-If context or credentials are missing, fix the execution problem and rerun under
-a new output filename. An API error must not become a quality FAIL.
+The workbook retains earlier instructor feedback on the original posts.
+Re-review it under the current brief; it is not an automatically approved label.
 
-## 3. Do the assignment with your own cases
+## 4. Compare a change
 
-Prepare 30 development briefs and 10 reserved briefs. For every case, supply
-approved source text, constraints, persona and scenario. Set Context_Status READY
-after checking that the packet is sufficient. Leave Model_Output blank when you
-want generation. Use a new Run_ID, such as `baseline`, and stable Test_ID values.
+Keep the baseline workbook. Make a revised copy, retain Test_ID and User_Input,
+and clear Model_Output, Human_Feedback, Status and Failure_Category before
+generating again. Review the new posts afresh.
 
-Import [Social Media Post Generation Workflow.json](../Social%20Media%20Post%20Generation%20Workflow.json).
-Attach OpenRouter Header Auth to **Generate Post**, upload your prepared CSV,
-and download the generated posts. The workflow makes one generation pass and
-records the generator version. It does not revise posts automatically.
+Match Test_IDs between copies. Count fixes (FAIL→PASS), regressions (PASS→FAIL)
+and the two unchanged outcomes. Save the prompt/settings and workflow execution
+with each copy. Use separate copies for the 10 reserved cases and report those
+results separately from the 30 development cases. Do not mix multiple versions
+of the same post into one Evaluation Log.
 
-Review each exact output yourself. Fill Human_Critique, Human_Decision,
-and Human_Policy_Version (`social-publication-v2`). Human_Reviewer can stay blank.
-Do this before
-looking at automated judgments. Use Failure Traces to collect evidence, then
-derive primary tags and count them in Failure Analysis.
+## 5. Optional: run and calibrate a judge
 
-## 4. Make and test one improvement
+Complete your human review first. Save frozen TRAIN, DEV and TEST workbook/CSV
+copies. Import Social Media Jev Judge Only.json; attach OpenRouter Header Auth
+to Call Jev and Independent LLM Review.
 
-Change the generator prompt in `src/generation.js`, update GENERATOR_VERSION,
-run `npm run build:workflows`, and reimport the generator workflow. For an n8n-only
-exercise, edit the same GENERATOR_PROMPT and GENERATOR_VERSION constants embedded
-in **Prepare Generation** and **Keep Generated Post**, and export that workflow
-with your submission. Keep the judge policy fixed during this experiment.
+Upload the six-column Evaluation Log CSV. Download judge_results.csv from
+Download Results CSV. Paste its seven data columns into the **Judge** tab A:G:
 
-Make a new input copy with the same cases and approved context. Set Run_ID to
-`revised`; clear Model_Output. The generator clears prior labels on newly
-generated posts. Append the new output rows to Evaluation Log and review them
-afresh. Set Compare Runs baseline/revised IDs and fill the stable case IDs.
+| Column | Meaning |
+| --- | --- |
+| Test_ID | Links to the exact post in this workbook's Evaluation Log. |
+| Human_Status | Your reference PASS/FAIL from the evaluated file. |
+| Jev_Status | Jev's PASS/FAIL prediction. |
+| LLM_Critique | A separate LLM's evidence-based critique. |
+| LLM_Status | That separate LLM's PASS/FAIL opinion. |
+| Run_Status | Whether each model completed, failed or lacked context. |
+| Review_Notes | Execution issues and your investigation of disagreements. |
 
-Inspect every PASS_TO_FAIL regression as well as FAIL_TO_PASS improvements.
-Changed briefs, duplicate IDs, missing reviews and unchanged posts are flagged
-and excluded from changed-output outcomes. Once the generator is frozen, run
-and report the reserved briefs separately using Generator_Split=RESERVED.
+Do not paste these results over the human review. Jev cannot write prose:
+LLM_Critique is an independent opinion, not an explanation of Jev's decision.
+Review errors and blank decisions; do not count them as PASS or quality FAIL.
 
-## 5. Optional judge calibration
+Compare Human_Status with Jev_Status. Use DEV disagreements to revise the judge
+and only TRAIN cases as prompt examples. Freeze it, then evaluate TEST once.
+Save a new workbook copy for each judge version. Record counts, false-pass and
+false-fail rates, and valid decisions / attempted cases in your submission.
 
-Use 30 frozen human-labeled baseline outputs: 6 TRAIN, 12 DEV and 12 TEST. Keep
-related cases in one split. Add only TRAIN examples to the prompt. Refine the
-judge on DEV, record versions, then test once after freezing. Keep each judge
-version in a separate workbook snapshot so old and new predictions on the same
-posts cannot be double-counted. See [integration details](jev-integration.md).
+The combined workflow also has Download Posts CSV (six columns) and
+Download Results CSV (seven judge columns). Review posts before opening judge
+results. Generation-only followed by judge-only is the simplest learning path.
 
-The [combined workflow](../Social%20Media%20Post%20Generation%20with%20Jev%20Judge.json)
-is available after human calibration. It generates only blank posts, preserves
-populated posts, then runs Jev and the independent reviewer. Attach credentials
-to all three HTTP nodes. Its automatic results do not replace the human reference.
+For a runnable illustration, examples/posts.csv contains three constructed
+cases with approved facts and human critiques. Keep them separate from measured
+student results. See jev-integration.md for TRAIN formatting and CLI details.

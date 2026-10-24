@@ -28,21 +28,26 @@ or certify accuracy. All course decisions still require human validation.
 
 ## Input and output
 
-The [35-column contract](../src/workshop.js) is shared by CLI, n8n and workbook.
-The required evaluation packet is `Test_ID`, `Run_ID`, `User_Input`, nonempty
-`Model_Output`, `Reference_Facts` and `Context_Status=READY`. If no external facts
-are needed, explicitly record that conclusion in Reference_Facts. Include actual
-approved source text; the models do not retrieve URLs. Add constraints, persona,
-scenario and source/trace provenance as applicable.
+The [workbook contract](../src/workshop.js) has two small exports:
+Evaluation Log uses Test_ID, User_Input, Model_Output, Human_Feedback, Status and
+Failure_Category. Judge uses Test_ID, Human_Status, Jev_Status, LLM_Critique,
+LLM_Status, Run_Status and Review_Notes. Judge results never overwrite human review.
+
+Put the brief, audience and constraints in User_Input, followed by an
+`Approved facts:` section with the actual source text. The input adapter derives
+the internal context and policy fields. If no external facts are needed, state
+that explicitly under Approved facts:. A missing facts section blocks evaluation;
+the models do not retrieve URLs. A new workbook/CSV copy identifies each experiment.
+Advanced CSVs with separate Reference_Facts and Context_Status remain supported.
 
 Only brief, candidate, facts, constraints, persona and selected TRAIN examples
 enter model requests. Current human labels, critiques, previous judgments,
 failure tags and historical review notes are excluded. Supply source evidence
 independently; a generated post cannot be evidence for its own concrete claims.
 
-`Human_Decision`, `Human_Critique` and
-`Human_Policy_Version=social-publication-v2` form the human reference record.
-`Human_Reviewer` is optional and can stay blank for this individual exercise.
+The adapter maps Status to the internal Human_Decision, Human_Feedback to
+Human_Critique, and Failure_Category to Failure_Tag. It supplies the internal
+policy version. These implementation fields are not extra workbook columns.
 Review the exact input/output packet, not an earlier version of the post.
 The generator clears those fields whenever it creates a new post and moves the
 previous critique into historical notes. Existing posts are preserved as-is.
@@ -58,9 +63,9 @@ Execution statuses remain separate from decisions:
 | AMBIGUOUS | Jev returned tied probabilities; human review required. |
 | NOT_RUN | No judge/reviewer call has been made. |
 
-Duplicate `Test_ID + Run_ID` pairs are blocked. Do not mix several judge versions
-of the same exact posts in one CSV or workbook; save separate snapshots. Workbook
-helper columns flag duplicate identities and exclude them from valid comparisons.
+Duplicate Test_IDs in a learner CSV are blocked. Advanced inputs are checked by
+Test_ID + Run_ID. Save separate workbook snapshots for generator versions, judge
+versions and dataset splits. There are no helper columns in Evaluation Log.
 
 ## Providers and credentials
 
@@ -95,9 +100,10 @@ completed row, and exits nonzero on evaluation errors.
 2. Assign related cases together to 6 TRAIN, 12 DEV and 12 TEST examples. Include
    both labels where possible; report actual class counts and any additional cases.
 3. Add only complete human-reviewed TRAIN records to `TRAIN_EXAMPLES` in
-   `src/judge.js`. Use the CSV field names, including Judge_Split=TRAIN,
-   policy, brief, facts, post, decision and critique. The defaults are intentionally
-   empty, so the initial judge is a zero-shot baseline until students add examples.
+   `src/judge.js`. Each object can use the same six column names as Evaluation Log.
+   User_Input must include Approved facts:, with Human_Feedback and Status filled.
+   The adapter supplies internal metadata. Evaluation cases sharing a TRAIN
+   Test_ID are rejected. The default array is empty until students add examples.
 4. Iterate on DEV disagreements, checking the human label as well as the judge.
    Increment JUDGE_VERSION for each behavioral change. Do not change posts while
    measuring a judge improvement. Never put DEV examples into the prompt.
@@ -105,11 +111,13 @@ completed row, and exits nonzero on evaluation errors.
    responses and the actual model identifiers. New tuning after looking at TEST
    needs a new untouched test set.
 
-Use one judge version and split at a time in Summary. Report human FAIL→judge
-PASS and human PASS→judge FAIL counts with their class denominators, as well as
-coverage. Missing context, ties and API failures cannot be counted as correct
-answers. A missing class makes its rate undefined. Three demo examples and twelve
-test examples are not a reliability study.
+Use one judge version and split per workbook copy. On Judge, compare Human_Status
+with Jev_Status. Report human FAIL→judge PASS and human PASS→judge FAIL counts with
+their class denominators, plus coverage. Missing context, ties and API failures
+cannot be counted as correct answers. A missing class makes its rate undefined.
+The CLI's .summary.json and .details.jsonl retain metrics and execution evidence
+without putting those fields in the learner's log. Three demo cases and twelve
+test cases are not a reliability study.
 
 ## Reproducibility
 

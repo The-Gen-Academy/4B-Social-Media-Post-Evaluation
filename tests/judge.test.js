@@ -4,6 +4,7 @@ import {buildRequest,buildReviewRequest,normalizeResponse,normalizeReview,blankR
 import {normalizeGeneration,buildGenerationRequest} from '../src/generation.js';
 import {callReview} from '../src/review-client.js';
 import {row,responseFor,reviewFor} from './fixtures.js';
+import {workshopInput,workshopResult} from '../src/workshop.js';
 test('single binary question, source context and no current human-label leakage',()=>{
   const candidate={...row,Human_Critique:'SECRET_LABEL',Jev_Decision:'SECRET_PREDICTION',Prior_Review_Notes:'SECRET_NOTE'};
   const req=buildRequest(candidate);
@@ -31,6 +32,16 @@ test('strict choice validation and ties never manufacture a publication decision
   for(const mutate of [r=>r.answers.Publication_Decision.probabilities.PASS=0.3,r=>r.answers.Publication_Decision.choice='FAIL',r=>r.answers.Publication_Decision.confidence=NaN,r=>delete r.answers.Publication_Decision]) {const r=responseFor();mutate(r);assert.throws(()=>normalizeResponse(r));}
   const tie=responseFor();tie.answers.Publication_Decision.probabilities={PASS:0.5,FAIL:0.5};
   assert.equal(normalizeResponse(tie).Jev_Decision,'');assert.equal(normalizeResponse(tie).Jev_Run_Status,'AMBIGUOUS');
+});
+test('six-column TRAIN examples work and cannot leak into unlabeled-split evaluation',()=>{
+  TRAIN_EXAMPLES.push(workshopResult(row));
+  try {
+    assert.throws(()=>buildRequest(workshopInput(workshopResult(row))),/overlaps/);
+    const state=buildRequest(workshopInput({...workshopResult(row),Test_ID:'UNSEEN'})).state;
+    assert.equal(state.train_examples[0].critique,row.Human_Critique);
+    assert.equal(state.train_examples[0].decision,'PASS');
+  } finally {TRAIN_EXAMPLES.length=0;}
+  assert.equal(eligibility(workshopInput({Test_ID:'NO_FACTS',User_Input:'Write a post.',Model_Output:'A post',Human_Feedback:'',Status:''})).status,'NEEDS_CONTEXT');
 });
 test('independent critique preserves Jev disagreement and rejects incomplete prose',()=>{
   const r={...row,...normalizeResponse(responseFor('FAIL')),...normalizeReview(reviewFor(),{Jev_Decision:'FAIL',Jev_Run_Status:'OK'})};
