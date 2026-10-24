@@ -52,8 +52,9 @@ Attach OpenRouter Header Auth to **Generate Post**, upload your prepared CSV,
 and download the generated posts. The workflow makes one generation pass and
 records the generator version. It does not revise posts automatically.
 
-Independently review each exact output. Fill Human_Critique, Human_Decision,
-Human_Reviewer and Human_Policy_Version (`social-publication-v2`). Do this before
+Review each exact output yourself. Fill Human_Critique, Human_Decision,
+and Human_Policy_Version (`social-publication-v2`). Human_Reviewer can stay blank.
+Do this before
 looking at automated judgments. Use Failure Traces to collect evidence, then
 derive primary tags and count them in Failure Analysis.
 

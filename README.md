@@ -22,8 +22,9 @@ The course's workload, publication policy and sample sizes are teaching choices.
    scenarios and audiences. Include approved source text, constraints and stable
    `Test_ID` values. Keep the reserved set out of generator tuning.
 2. Generate a baseline. A `Run_ID` identifies one set of exact posts. Review each
-   output independently: write `Human_Critique`, then `Human_Decision`, reviewer
-   and policy version. An incomplete evaluation packet stays `NEEDS_CONTEXT`
+   output yourself: write `Human_Critique`, then `Human_Decision` and
+   `Human_Policy_Version`. `Human_Reviewer` is optional for this individual exercise.
+   An incomplete evaluation packet stays `NEEDS_CONTEXT`
    with a blank decision. An unsupported claim in an otherwise complete packet FAILs.
 3. Group observed failures into useful tags. Cite cases, identify a cause, and
    make a targeted generator change. Categories emerge from critiques.
@@ -130,9 +131,3 @@ Tests cover binary response validation, ties, missing context, duplicate identit
 label isolation, independent critiques, CSV round trips, provider errors and
 embedded n8n code. See [integration details](docs/jev-integration.md) for contracts
 and validation limits.
-
-## Separate clinic experiment
-
-This development branch also contains the [clinic intent evaluation report](docs/clinic-intent-experiments.md)
-and its workflow. That experiment has a different dataset and task; it is not the
-social-post publication policy or this assignment's evaluation result.

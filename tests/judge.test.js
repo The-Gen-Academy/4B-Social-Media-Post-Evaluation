@@ -20,8 +20,8 @@ test('missing source context, blank posts, duplicates and failed generation are 
   assert(prepareRows([row,row]).every(r=>eligibility(r).status==='ERROR'));
   assert.equal(blankResult('ERROR').Jev_Decision,'');
 });
-test('human TRAIN examples allowed, overlap with DEV or TEST rejected',()=>{
-  TRAIN_EXAMPLES.push({...row,Judge_Split:'TRAIN'});
+test('human TRAIN examples need no reviewer name, overlap with DEV or TEST rejected',()=>{
+  TRAIN_EXAMPLES.push({...row,Human_Reviewer:'',Judge_Split:'TRAIN'});
   try {assert.throws(()=>buildRequest(row),/overlaps/); assert.equal(buildRequest({...row,Judge_Split:'TRAIN'}).state.train_examples.length,1);}
   finally {TRAIN_EXAMPLES.length=0;}
 });
@@ -43,7 +43,7 @@ test('new generated posts clear old human labels and preserve prior critique as 
   assert.match(r.Prior_Review_Notes,/Date matches/);assert.equal(r.Model_Output,'New post');
 });
 test('confusion matrix denominators, coverage and split separation',()=>{
-  const make=(human,judge)=>({...row,Human_Decision:human,...normalizeResponse(responseFor(judge))});
+  const make=(human,judge)=>({...row,Human_Reviewer:'',Human_Decision:human,...normalizeResponse(responseFor(judge))});
   const rows=[make('PASS','PASS'),make('PASS','FAIL'),make('FAIL','PASS'),make('FAIL','FAIL'),{...row,...blankResult('ERROR')},{...make('PASS','PASS'),Human_Critique:''},{...make('PASS','PASS'),Judge_Split:'TRAIN'}];
   const s=summarize(rows);const g=s.find(x=>x.split==='TEST');
   assert.equal(g.compared,4);assert.equal(g.agreement,0.5);assert.equal(g.false_pass_rate,0.5);assert.equal(g.false_fail_rate,0.5);assert.equal(g.label_coverage,5/6);assert.equal(g.judge_coverage,5/6);assert.equal(g.errors,1);
