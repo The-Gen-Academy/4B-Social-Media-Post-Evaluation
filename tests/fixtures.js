@@ -1,15 +1,4 @@
-import { METRICS, QUESTIONS, CATEGORY_LABELS } from '../src/judge.js';
-
-// Fabricated API responses for contract tests, never represented as live Jev judgments.
-export function responseFor(grades = [4, 4, 4, 4, 4], category = 'none', confidence = 0.9) {
-  const answers = {};
-  for (const [index, metric] of METRICS.entries()) {
-    answers[metric] = { type: 'score', score: grades[index] - 1, confidence,
-      legend: Object.fromEntries(QUESTIONS[metric].criteria.map((description, level) => [level, description])),
-      probabilities: Object.fromEntries([0, 1, 2, 3, 4].map(level => [level, level === grades[index] - 1 ? 1 : 0])),
-    };
-  }
-  answers.Failure_Category = { type: 'choice', choice: category, confidence,
-    probabilities: Object.fromEntries(Object.keys(CATEGORY_LABELS).map(key => [key, key === category ? 1 : 0])) };
-  return { model: 'jev-1.13.0', answers, usage: { input_tokens: 1200, output_tokens: 100 } };
-}
+export const row = {Test_ID:'CASE_001',Run_ID:'baseline',User_Input:'Describe a workshop.',Reference_Facts:'Approved: workshop is on February 15. No other claims approved.',Context_Status:'READY',Model_Output:'Join the workshop on February 15.',Judge_Split:'TEST',Human_Decision:'PASS',Human_Critique:'Date matches approved facts.',Human_Reviewer:'Instructor',Human_Policy_Version:'social-publication-v2'};
+// Fabricated fixtures, never represented as live model measurements.
+export function responseFor(decision='PASS') {return {model:'jev-1.13.0',answers:{Publication_Decision:{type:'choice',choice:decision,probabilities:{PASS:decision==='PASS'?0.9:0.1,FAIL:decision==='FAIL'?0.9:0.1},confidence:0.8}},usage:{input_tokens:100,output_tokens:0}};}
+export function reviewFor(decision='PASS') {return {model:'openai/gpt-4.1-mini',choices:[{finish_reason:'stop',message:{content:JSON.stringify({critique:'The stated date matches the supplied approved facts.',decision})}}]};}

@@ -1,248 +1,120 @@
-# Jev integration
+# Binary Jev integration
 
-## What runs
+## Model responsibilities
 
-Each nonempty `Model_Output` produces one TypeSafe-format request. The CLI supports
-OpenRouter at `https://openrouter.ai/api/v1/systemone`, direct TypeSafe at
-`https://api.typesafe.ai/v1/systemone`, and Vercel AI Gateway at
-`https://ai-gateway.vercel.sh/typesafe/v1/systemone`. The n8n imports default to
-OpenRouter. The request contains a state and
-six independent questions: five **Score** questions and one failure-category
-**Choice**. There is no generative-model fallback. Jev does not produce prose
-feedback; the existing critic still provides revision advice in the generation
-workflow.
+`src/judge.js` defines one publication policy and one Jev `choice` question:
+`Publication_Decision`, with `PASS` and `FAIL` criteria. The result is accepted
+only when the response envelope, labels, confidence and two probabilities are
+valid and the selected label has the greatest probability. A tie is `AMBIGUOUS`
+with a blank decision. Probability and confidence are diagnostics, not grades or
+measured correctness. There is no numeric publication threshold.
 
-The implementation uses the [official HTTP contract](https://docs.typesafe.ai/api).
-The workshop pins the Jev 1.13 family: OpenRouter uses `typesafe/jev-1.13`,
-direct TypeSafe uses `jev-1.13.0`, and Gateway uses `typesafe-ai/jev-1.13.0`.
-OpenRouter's [System One documentation](https://openrouter.ai/docs/guides/community/typesafe-sdk)
-confirms the same request/response format and OpenRouter Bearer authentication.
-No separate TypeSafe key or account is required for that route. This uses the
-System One endpoint, not chat completions or Jev Router. OpenRouter's response
-records the actual model served and includes `usage.cost` in the raw response.
-Use `JEV_MODEL` locally, or edit the `model` variable in **Prepare Jev Request**,
-to evaluate a different version. Record new runs separately when switching models.
-The [Gateway compatibility guide](https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe)
-documents the shared response contract and service-specific credentials.
+Jev supports [typed decisions](https://docs.typesafe.ai/api/system-one), including
+the [Choice primitive](https://docs.typesafe.ai/primitives/choice). It does not
+write prose. The independent review uses OpenRouter chat completions and a strict
+[structured-output schema](https://openrouter.ai/docs/guides/features/structured-outputs):
 
-## Input contract
+```json
+{"critique":"Evidence and decisive publication requirement.","decision":"PASS"}
+```
 
-For the workshop, upload **linkedin_posts_output.csv** downloaded from the
-existing generation workflow, unchanged. There is no workbook preparation,
-column filling or score clearing step. The CLI accepts CSV, not the whole XLSX workbook. Quoted fields,
-commas, newlines and a UTF-8 BOM are supported. Duplicate headers are rejected.
+`decision` must be PASS or FAIL. A refused, truncated, malformed or empty review
+is an error. The reviewer sees the same policy, approved context and TRAIN
+examples as Jev, but no Jev prediction or current human feedback. Its critique
+must be attributed to the independent LLM. Disagreement flags human review and
+never changes Jev's recorded prediction. `Review_Required=false` means the two
+model decisions agreed with valid responses; it does **not** authorize publishing
+or certify accuracy. All course decisions still require human validation.
 
-The generation export already carries `User_Input` and `Model_Output`, plus
-`Test_ID` when supplied in the generation input. A missing ID does not prevent
-judging; original row order is preserved. Jev fills the five scores and code fills
-the total/status. Open the results CSV directly; the workbook is optional.
-The 10-column n8n export matches the workbook exactly. The additional fields
-below are optional instructor inputs, not participant setup tasks. Supply any
-approved facts and requirements during the earlier generation exercise so they
-travel with the original request. Historical human grades
-remain in the hidden **Evaluation Log** and related instructor tabs.
+## Input and output
 
-| Column | Use |
+The [35-column contract](../src/workshop.js) is shared by CLI, n8n and workbook.
+The required evaluation packet is `Test_ID`, `Run_ID`, `User_Input`, nonempty
+`Model_Output`, `Reference_Facts` and `Context_Status=READY`. If no external facts
+are needed, explicitly record that conclusion in Reference_Facts. Include actual
+approved source text; the models do not retrieve URLs. Add constraints, persona,
+scenario and source/trace provenance as applicable.
+
+Only brief, candidate, facts, constraints, persona and selected TRAIN examples
+enter model requests. Current human labels, critiques, previous judgments,
+failure tags and historical review notes are excluded. Supply source evidence
+independently; a generated post cannot be evidence for its own concrete claims.
+
+`Human_Decision`, `Human_Critique`, `Human_Reviewer` and
+`Human_Policy_Version=social-publication-v2` form the human reference record.
+Review the exact input/output packet, not an earlier version of the post.
+The generator clears those fields whenever it creates a new post and moves the
+previous critique into historical notes. Existing posts are preserved as-is.
+
+Execution statuses remain separate from decisions:
+
+| Status | Meaning |
 | --- | --- |
-| `Model_Output` | Candidate post. Empty/whitespace-only values become SKIPPED without a call. |
-| `User_Input` | Original topic/request; facts explicitly supplied here may ground the post. |
-| `Test_ID` | Identifier retained for comparison; duplicate or missing IDs do not merge rows. |
-| `Reference_Facts` | Approved source text, product facts, dates, actual testimonials or campaign brief. Include text, not only a URL: Jev does not fetch links. |
-| `Constraints` | Explicit requirements such as format, length or permitted voice. |
-| `Persona` | Desired voice. Defaults to professional, clear and accessible for a technical audience. |
-| `Status` | Human PASS/FAIL label, case-insensitive; used only after evaluation. |
-| Human rubric scores and `Human_Feedback` | Preserved as input data, never included in Jev's state. |
+| OK | Valid response with one PASS/FAIL decision. |
+| ERROR | Identity, generation, API or response-validation failure. |
+| NEEDS_CONTEXT | Evaluation packet is incomplete. |
+| SKIPPED | No candidate post. |
+| AMBIGUOUS | Jev returned tied probabilities; human review required. |
+| NOT_RUN | No judge/reviewer call has been made. |
 
-Only `User_Input`, `Model_Output`, `Reference_Facts`, `Constraints` and `Persona`
-enter the judge's state. Keep references independently reviewed: the post being
-graded is not a source of facts about itself. Missing reference text is recorded
-as `reference_facts_missing`, even when the rubric gives a provisional PASS.
+Duplicate `Test_ID + Run_ID` pairs are blocked. Do not mix several judge versions
+of the same exact posts in one CSV or workbook; save separate snapshots. Workbook
+helper columns flag duplicate identities and exclude them from valid comparisons.
 
-## Score conversion and routing
+## Providers and credentials
 
-Jev [Score responses](https://docs.typesafe.ai/primitives/score) use zero-based
-levels and a fractional probability-weighted score. With five rubric levels,
-the API score spans **0–4**, not 1–5 and not 0–1.
+The n8n imports default to OpenRouter. Attach the same Header Auth credential to
+**Call Jev**, **Independent LLM Review**, and **Generate Post** when present.
+Use `Authorization: Bearer <OpenRouter API key>`. No API key or credential ID is
+included in exported workflows.
 
-For the handout's integer rubric, this implementation chooses the
-highest-probability level and adds one. Ties choose the lower grade. For example,
-probability 0.4 on level 2 and 0.6 on level 3 yields grade **4**. The original
-weighted score plus one (**3.6** in this example) is also retained in the
-`Jev_<Metric>_Expected` column. This is an explicit conversion policy to calibrate
-against the human labels; it is not a claim that the most likely grade is correct.
+| Jev provider | Endpoint | Default model | Environment key |
+| --- | --- | --- | --- |
+| OpenRouter | `https://openrouter.ai/api/v1/systemone` | `typesafe/jev-1.13` | OPENROUTER_API_KEY |
+| TypeSafe | `https://api.typesafe.ai/v1/systemone` | `jev-1.13.0` | TYPESAFE_API_KEY |
+| Vercel AI Gateway | `https://ai-gateway.vercel.sh/typesafe/v1/systemone` | `typesafe-ai/jev-1.13.0` | AI_GATEWAY_API_KEY |
 
-Code computes the sum of the five integer grades. The decision is exactly:
+CLI flags `--provider` and `--model` override environment settings. The independent
+review always uses OpenRouter and also requires OPENROUTER_API_KEY. Set
+`REVIEW_MODEL` or `--review-model` for a compatible structured-output model. In n8n,
+changing Jev provider requires changing the endpoint, credential and model together;
+the independent review retains its own OpenRouter credential and endpoint.
 
-```text
-FAIL if Factual_Correctness < 4 OR Total_Score < 20
-PASS otherwise
-```
+The Jev CLI retries transient failures up to three times, with bounded backoff;
+it does not retry authentication failures or disclose response bodies. The review
+CLI makes one attempt. n8n HTTP nodes have a 60-second timeout and up to three
+attempts, five seconds apart. Credential-configuration failures can stop a whole
+n8n execution; fix the credential before rerunning. Each run exports results and
+never publishes posts. The CLI refuses to overwrite output files, persists each
+completed row, and exits nonzero on evaluation errors.
 
-The returned Choice does not override those rules. If the factual cutoff fails,
-the failure category is Incorrect or Hallucinated Content. For other failures,
-the returned category is used. If Jev returns `none` for a failed post, code
-assigns a fallback from the weakest dimension and requires review.
-`Jev_Category_Source` distinguishes these decisions from Jev's Choice.
+## Calibration without leakage
 
-`Jev_Review_Required` is separate from `Jev_Status`. It is true when any rubric
-confidence is below the configured threshold, reference facts are missing,
-or the independent category conflicts with the score decision. For failed
-posts, low confidence in the category also requests review. Confidence
-describes the model's distribution; it is not measured accuracy on this dataset.
+1. Freeze exact human-labeled baseline posts and their sources.
+2. Assign related cases together to 6 TRAIN, 12 DEV and 12 TEST examples. Include
+   both labels where possible; report actual class counts and any additional cases.
+3. Add only complete human-reviewed TRAIN records to `TRAIN_EXAMPLES` in
+   `src/judge.js`. Use the CSV field names, including Judge_Split=TRAIN, reviewer,
+   policy, brief, facts, post, decision and critique. The defaults are intentionally
+   empty, so the initial judge is a zero-shot baseline until students add examples.
+4. Iterate on DEV disagreements, checking the human label as well as the judge.
+   Increment JUDGE_VERSION for each behavioral change. Do not change posts while
+   measuring a judge improvement. Never put DEV examples into the prompt.
+5. Freeze policy, prompt, examples, model and settings before TEST. Save raw
+   responses and the actual model identifiers. New tuning after looking at TEST
+   needs a new untouched test set.
 
-If downstream publishing is added later, only consider rows with
-`Jev_Status == PASS` **and** `Jev_Review_Required == false`. This repository
-currently exports results without publishing.
+Use one judge version and split at a time in Summary. Report human FAIL→judge
+PASS and human PASS→judge FAIL counts with their class denominators, as well as
+coverage. Missing context, ties and API failures cannot be counted as correct
+answers. A missing class makes its rate undefined. Three demo examples and twelve
+test examples are not a reliability study.
 
-Malformed responses, missing question answers, invalid distributions and
-failed requests produce **ERROR** with blank scores, never a fabricated FAIL
-or PASS. Empty posts produce **SKIPPED**. Old `Jev_*` result columns are cleared
-on errors/skips so stale grades cannot appear current.
+## Reproducibility
 
-## n8n setup
-
-Import one of the two generated JSON files into your n8n instance. Both imports
-start inactive and have no credential IDs or keys.
-
-1. In **Call Jev**, create/select **Header Auth**. Header name: `Authorization`.
-   Header value: `Bearer <OpenRouter key>`. The default URL is
-   `https://openrouter.ai/api/v1/systemone` and the model is `typesafe/jev-1.13`.
-2. In the generation variant, also connect your OpenAI credential to both
-   existing model nodes. Confirm the selected creator/critic model IDs are
-   available in your account.
-3. Execute **Social Media Jev Judge Only.json**, open **Upload Posts CSV**, upload
-   the generation workflow's **linkedin_posts_output.csv** unchanged, and submit.
-4. **Normalize Jev Result** retains the complete diagnostic result. The following
-   **Workshop Results** node selects only the 10 participant columns. Download
-   the CSV binary from **Download Results CSV** and open it directly in Excel or
-   Google Sheets. No workbook copy/paste or manual scoring is required.
-
-For a fresh generation run after revising the prompt, rerun the generation stage
-with its original input CSV, then upload the newly generated output to Jev.
-The optional combined generation-and-judge variant also accepts that original
-input CSV and judges the posts after generation. Populated posts are judged as-is.
-
-For direct TypeSafe, change **Call Jev** to
-`https://api.typesafe.ai/v1/systemone`, select a TypeSafe Header Auth credential,
-and set `const model = DEFAULT_MODEL` in **Prepare Jev Request**.
-
-For Vercel AI Gateway, change **Call Jev** to
-`https://ai-gateway.vercel.sh/typesafe/v1/systemone`, select a Gateway Header Auth
-credential, and set `const model = 'typesafe-ai/' + DEFAULT_MODEL` in
-**Prepare Jev Request**. Use only the credential belonging to the selected
-provider; keys are not interchangeable.
-
-The generation variant routes populated rows around the creator and keeps them
-for judging. Rows with neither topic nor post bypass generation and become
-SKIPPED. Final posts are merged by original row index, so repeated Test_IDs and
-topics cannot overwrite one another. Jev runs after this merge and before export.
-
-The judge loop processes one row at a time. Each HTTP request has a 30-second
-timeout and at most three attempts separated by five seconds using n8n's built-in
-retry setting. After exhaustion, the error reaches normalization and the loop
-continues. The CLI instead uses exponential backoff for transient errors and
-honors Retry-After up to 30 seconds; longer requested waits produce an error for
-a later rerun. n8n credential-configuration errors may stop execution before the
-HTTP node can emit a row: resolve these in **Call Jev** before running the batch.
-
-The workflow's original creator and critic prompts remain as provided by the
-project. Jev is a final independent rubric evaluator, not the critic's rewrite
-controller. If those prompts disagree with your intended persona or constraints,
-align them as part of the exercise before measuring improvement.
-
-## CLI and reports
-
-```bash
-npm ci
-cp .env.example .env
-# Edit .env to select a provider and set its matching key. Do not commit it.
-npm run judge -- --input posts.csv --output results/baseline.csv
-npm run judge -- --input posts.csv --output results/workshop.csv --workshop
-npm run judge -- --input posts.csv --output results/requests.csv --dry-run
-npm run judge -- --input results/baseline.csv --report-only
-```
-
-For OpenRouter, set `JEV_PROVIDER=openrouter`, `OPENROUTER_API_KEY`, and
-`JEV_MODEL=typesafe/jev-1.13`. For Gateway, set `JEV_PROVIDER=gateway`, `AI_GATEWAY_API_KEY`, and
-`JEV_MODEL=typesafe-ai/jev-1.13.0`. For direct TypeSafe, set
-`JEV_PROVIDER=typesafe`, `TYPESAFE_API_KEY`, and `JEV_MODEL=jev-1.13.0`.
-Leave `JEV_MODEL` blank to use the selected provider’s default model ID.
-`--provider` and `--model` override the corresponding environment settings.
-The client uses only the credential belonging to the selected provider.
-
-Gateway `403 customer_verification_required` means the account requires a valid
-payment method. Enable it in the Vercel dashboard, then retry the failed rows
-with a new output name. The CLI reports that cause without exposing provider
-response bodies or credentials. Other 401/403 errors require checking credentials
-and account access. Authentication errors are not retried by the CLI.
-
-`--workshop` exports only the same 10 columns as n8n and the workbook. Omit the
-flag to preserve human labels and all diagnostic fields for calibration. The
-summary JSON is still computed from full in-memory results. A compact CSV no
-longer contains human labels, so later `--report-only` cannot compare them.
-
-The CLI never modifies the input or overwrites an existing output. Use a new
-output path for each run. It persists each completed row to the CSV and writes
-a summary after the batch. An error in any row sets a nonzero exit code while
-preserving successful judgments. Interrupted runs may have an incomplete CSV;
-they are not automatically resumed. Re-run unfinished rows into a new file.
-CSV formula-like strings are escaped on export for safe spreadsheet opening.
-
-The report includes evaluated/skipped/error counts, review count, number of
-valid human labels, number actually compared, agreement, false passes, false
-fails, and row-specific disagreements. Missing and invalid human labels are
-never treated as passes. The report warns when fewer than 20 labeled rows were
-compared; even more rows do not by themselves prove reliability.
-
-For a calibration exercise:
-
-1. Label representative posts independently, including factual errors, generic
-   resource lists, weak CTAs, and strong posts. Complete the five dimensions and
-   human Status; retain the relevant source facts.
-2. Separate calibration rows from held-out rows before changing question wording.
-3. Use disagreements on the calibration set to refine `QUESTIONS` in
-   `src/judge.js`. Increment `RUBRIC_VERSION`; rebuild JSON workflows with
-   `npm run build:workflows`.
-4. Freeze rubric, score mapping, model version and confidence threshold, then
-   evaluate the held-out CSV once. Report its sample size and false passes as
-   well as agreement. Do not tune on these held-out outcomes and still call the
-   resulting number an independent test.
-5. For regression testing, keep before/after posts under stable Test_IDs and
-   compare both the previously failing and previously passing cases.
-
-## Validation status
-
-All 29 automated tests pass. They use fabricated API fixtures to check provider
-routing, thresholds, malformed responses, retries, CSV round trips, human-label
-isolation, rounded probability boundaries and embedded n8n Code nodes.
-
-On October 16, 2026, a live CLI run through OpenRouter scored all 12 workbook
-posts with `typesafe/jev-1.13-20260917`: **1 PASS, 11 FAIL, no unresolved errors**.
-The empty thirteenth row was skipped. The workbook contains those actual scores,
-with its existing formulas independently reproducing every total and decision.
-Raw responses and compact/full CSV exports are retained in the ignored local
-`results/openrouter-live-2026-10-16/` directory.
-
-Jev agreed with 8 of the 12 historical human labels. Relative to those labels,
-there was one false pass (POST_007) and three false fails (POST_001, POST_003,
-POST_010). This small demonstration does not establish judge reliability.
-All 12 inputs lack separate `Reference_Facts`, so all results retain the advisory
-review flag. The rubric and pass/fail thresholds were not tuned to these labels.
-
-The live run exposed a floating-point boundary check that rejected probabilities
-summing to 0.99. One request was repeated to capture the raw response; after the
-validator fix, that saved response was reprocessed without another API call.
-The intended 0.01 probability-sum tolerance is unchanged. CSV review counts now
-also recognize serialized boolean values (`1`/`0`). Both fixes have regression
-tests and are included in the regenerated n8n imports.
-
-The earlier October 15 Gateway verification error remains in hidden historical
-instructor tabs. The judge-only workflow was imported into local Docker n8n 2.18.7 and run
-through its CSV upload endpoint on October 16, 2026. Execution 269 completed
-in 3.651 seconds: 12 real Jev calls, 1 PASS, 11 FAIL, 1 empty row SKIPPED,
-and no API errors. The final CSV contains 13 rows and matches the previous
-live CLI grades, totals and decisions.
-
-Generated workflow source lives in `scripts/build-workflows.js`; don't edit
-embedded rubric copies directly. Run `npm run build:workflows` after changes to
-the shared evaluator and `npm test` to check both entrypoints.
+All three n8n workflows are generated from the shared source files by
+`scripts/build-workflows.js`. Changes to the generator, policy, TRAIN examples
+or CSV contract require rebuilding and reimporting the workflow.
+Automated tests use fabricated responses, clearly separated from any live run.
+The workbook keeps historical posts and instructor feedback but no purported
+current judge results. See the current walkthrough for the runnable demonstration.

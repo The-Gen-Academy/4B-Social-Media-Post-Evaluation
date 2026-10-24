@@ -4,92 +4,68 @@ import { parseArgs } from 'node:util';
 import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { callJev, resolveConnection, providerConfig } from './client.js';
+import { callReview } from './review-client.js';
 import { WORKSHOP_COLUMNS, workshopResult } from './workshop.js';
-import { buildRequest, normalizeResponse, blankResult, summarize, clean,
-  DEFAULT_MIN_CONFIDENCE } from './judge.js';
-
-const usage = `Usage: npm run judge -- --input posts.csv [--output results/jev.csv]
-  --dry-run                  Write request JSONL without calling Jev
-  --workshop                 Export only the 10 participant columns
-  --provider openrouter      Select typesafe, gateway or openrouter (or JEV_PROVIDER)
-  --model typesafe/jev-1.13   Override the provider's default model (or JEV_MODEL)
-  --min-confidence 0.7        Advisory review threshold, 0..1
-  --report-only              Analyze an existing judged CSV without an API call
-  --help                     Show usage
-
-Input columns: Model_Output (required), User_Input, Test_ID, Reference_Facts,
-Constraints, Persona. Status is the human label, used only for comparison.
-Output paths must be new: existing files are never overwritten.`;
-
+import { buildRequest, buildReviewRequest, normalizeResponse, normalizeReview, blankResult, summarize, prepareRows, eligibility, REVIEW_MODEL } from './judge.js';
+const usage = `Usage: npm run judge -- --input posts.csv --output results/baseline.csv
+  --provider openrouter     Jev provider: openrouter (default), typesafe, gateway
+  --model MODEL             Jev model override
+  --review-model MODEL      Independent LLM reviewer on OpenRouter
+  --dry-run                 Export requests without API calls
+  --workshop                Export the 35 workbook columns (human labels retained)
+  --report-only             Report by run, judge version, model and split
+  --help                    Show usage
+Source text and Context_Status=READY are required. Use a new output filename.`;
 async function main() {
-  const { values } = parseArgs({ options: {
-    input: { type: 'string' }, output: { type: 'string', default: 'results/jev.csv' },
-    provider: { type: 'string' }, model: { type: 'string' }, 'min-confidence': { type: 'string' },
-    'dry-run': { type: 'boolean' }, workshop: { type: 'boolean' }, 'report-only': { type: 'boolean' }, help: { type: 'boolean' },
-  } });
-  if (values.help) { console.log(usage); return; }
+  const { values } = parseArgs({ options: { input: {type:'string'}, output: {type:'string',default:'results/jev.csv'}, provider:{type:'string'}, model:{type:'string'}, 'review-model':{type:'string'}, 'dry-run':{type:'boolean'}, workshop:{type:'boolean'}, 'report-only':{type:'boolean'}, help:{type:'boolean'} } });
+  if (values.help) return console.log(usage);
   if (!values.input) throw new Error(usage);
-  if (values['dry-run'] && values['report-only']) throw new Error('Choose either --dry-run or --report-only.');
+  if (values['dry-run'] && values['report-only']) throw new Error('Choose dry-run or report-only.');
   const input = resolve(values.input), output = resolve(values.output);
   if (input === output) throw new Error('Output must differ from input.');
-  const provider = values.provider ?? (process.env.JEV_PROVIDER || 'typesafe');
-  const model = values.model ?? (process.env.JEV_MODEL || providerConfig(provider).model);
-  const confidenceText = values['min-confidence'] ?? process.env.JEV_MIN_CONFIDENCE ?? String(DEFAULT_MIN_CONFIDENCE);
-  const confidence = Number(confidenceText);
-  if (!confidenceText.trim() || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
-    throw new Error('--min-confidence must be between 0 and 1.');
-  }
   let headers;
-  const rows = parse(await readFile(input, 'utf8'), {
-    bom: true, skip_empty_lines: true,
-    columns: columns => {
-      headers = columns;
-      if (new Set(columns).size !== columns.length) throw new Error('CSV contains duplicate headers.');
-      if (!columns.includes('Model_Output')) throw new Error('CSV requires a Model_Output column.');
-      return columns;
-    },
-  });
+  const rows = prepareRows(parse(await readFile(input,'utf8'), { bom:true, skip_empty_lines:true, columns: cols => {
+    headers = cols;
+    if (new Set(cols).size !== cols.length) throw new Error('Duplicate CSV headers.');
+    if (!cols.includes('Model_Output')) throw new Error('Model_Output column is required.');
+    return cols;
+  } }));
   if (!headers) throw new Error('CSV is empty.');
   if (values['report-only']) {
-    if (!headers.includes('Jev_Status')) throw new Error('--report-only requires a judged CSV with Jev_Status.');
-    console.log(JSON.stringify(summarize(rows), null, 2)); return;
+    if (!headers.includes('Jev_Run_Status')) throw new Error('Report requires a v2 judged CSV.');
+    return console.log(JSON.stringify(summarize(rows),null,2));
   }
-  await mkdir(dirname(output), { recursive: true });
+  const provider = values.provider || process.env.JEV_PROVIDER || 'openrouter';
+  const model = values.model || process.env.JEV_MODEL || providerConfig(provider).model;
+  const reviewModel = values['review-model'] || process.env.REVIEW_MODEL || REVIEW_MODEL;
+  await mkdir(dirname(output),{recursive:true});
   if (values['dry-run']) {
-    const requests = rows.flatMap((row, index) => clean(row.Model_Output)
-      ? [{ row: index + 2, Test_ID: row.Test_ID ?? '', request: buildRequest(row, model) }] : []);
-    await writeFile(`${output}.requests.jsonl`, requests.map(r => JSON.stringify(r)).join('\n') + '\n', { flag: 'wx' });
-    console.log(`Dry run: ${requests.length} requests written to ${output}.requests.jsonl; no API calls.`);
-    return;
+    const requests = rows.map(row => ({ Test_ID:row.Test_ID, Run_ID:row.Run_ID, eligibility:eligibility(row), ...(eligibility(row).status === 'OK' ? { jev:buildRequest(row,model), independent_review:buildReviewRequest(row,reviewModel) } : {}) }));
+    await writeFile(`${output}.requests.jsonl`,requests.map(r=>JSON.stringify(r)).join('\n')+'\n',{flag:'wx'});
+    return console.log(`Dry run: ${requests.length} rows; no API calls.`);
   }
-  resolveConnection({ provider });
-  // Reserve output names before making billable calls; each run retains its own evidence.
-  await writeFile(output, '', { flag: 'wx' });
-  await writeFile(`${output}.summary.json`, '', { flag: 'wx' });
-  const results = [];
-  const columns = values.workshop ? WORKSHOP_COLUMNS : [...new Set([...headers, ...Object.keys(blankResult(''))])];
-  const exportRows = () => values.workshop ? results.map(workshopResult) : results;
-  for (const [index, row] of rows.entries()) {
-    let evaluation;
-    if (!clean(row.Model_Output)) evaluation = blankResult('SKIPPED', 'Model_Output is empty', confidence);
-    else {
-      try {
-        const response = await callJev(buildRequest(row, model), { provider });
-        evaluation = normalizeResponse(response, row, confidence);
-      } catch (error) {
-        evaluation = blankResult('ERROR', error.message, confidence);
-      }
+  if (rows.some(row => eligibility(row).status === 'OK')) { resolveConnection({provider}); if (!process.env.OPENROUTER_API_KEY?.trim()) throw new Error('Set OPENROUTER_API_KEY for the independent LLM critique.'); }
+  await writeFile(output,'',{flag:'wx'});
+  await writeFile(`${output}.summary.json`,'',{flag:'wx'});
+  const results = [], columns = values.workshop ? WORKSHOP_COLUMNS : [...new Set([...headers,...WORKSHOP_COLUMNS,...Object.keys(blankResult(''))])];
+  const persist = () => writeFile(output,stringify(values.workshop ? results.map(workshopResult) : results,{header:true,columns,escape_formulas:true}));
+  for (const row of rows) {
+    const ready = eligibility(row);
+    let evaluated = { ...row, ...blankResult(ready.status,ready.reason) };
+    if (ready.status === 'OK') {
+      try { evaluated = { ...evaluated, ...normalizeResponse(await callJev(buildRequest(row,model),{provider})) }; }
+      catch (e) { evaluated = { ...evaluated, ...blankResult('ERROR',e.message) }; }
+      // Current human feedback and Jev's decision never enter the review request.
+      try { evaluated = { ...evaluated, ...normalizeReview(await callReview(buildReviewRequest(row,reviewModel)),evaluated) }; }
+      catch (e) { evaluated = { ...evaluated, LLM_Run_Status:'ERROR', Review_Required:true, Review_Reasons:'Independent critique unavailable.', Error:[evaluated.Error,e.message].filter(Boolean).join('; ') }; }
     }
-    results.push({ ...row, ...evaluation });
-    // Persist partial progress so an interrupted batch does not lose completed judgments.
-    await writeFile(output, stringify(exportRows(), { header: true, columns, escape_formulas: true }));
-    console.error(`Row ${index + 2}: ${evaluation.Jev_Status}`);
+    results.push(evaluated); await persist();
+    console.error(`${row.Test_ID}: Jev ${evaluated.Jev_Run_Status}; independent review ${evaluated.LLM_Run_Status}`);
   }
-  if (!rows.length) await writeFile(output, stringify([], { header: true, columns }));
+  if (!rows.length) await persist();
   const summary = summarize(results);
-  await writeFile(`${output}.summary.json`, JSON.stringify(summary, null, 2) + '\n');
-  console.log(JSON.stringify(summary, null, 2));
-  if (summary.errors) process.exitCode = 1;
+  await writeFile(`${output}.summary.json`,JSON.stringify(summary,null,2)+'\n');
+  console.log(JSON.stringify(summary,null,2));
+  if (results.some(r=>r.Jev_Run_Status==='ERROR'||r.LLM_Run_Status==='ERROR')) process.exitCode=1;
 }
-
-main().catch(error => { console.error(error.message); process.exitCode = 1; });
+main().catch(error=>{console.error(error.message);process.exitCode=1;});

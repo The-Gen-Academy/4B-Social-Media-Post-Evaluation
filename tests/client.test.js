@@ -5,7 +5,7 @@ import { buildRequest, normalizeResponse } from '../src/judge.js';
 import { responseFor } from './fixtures.js';
 
 test('OpenRouter uses its own key, model and System One endpoint without changing scoring', async () => {
-  const row = { Model_Output: 'A social media post', Reference_Facts: 'Approved facts' };
+  const row = { Test_ID:'T1', Run_ID:'baseline', User_Input:'Write a post', Context_Status:'READY', Model_Output: 'A social media post', Reference_Facts: 'Approved facts' };
   const request = buildRequest(row, providerConfig('openrouter').model);
   assert.equal(request.model, 'typesafe/jev-1.13');
   const result = await callJev(request, { provider: 'openrouter', apiKey: 'openrouter-test-key',
@@ -18,7 +18,7 @@ test('OpenRouter uses its own key, model and System One endpoint without changin
         provider: 'TypeSafe', id: 'mock-decision', usage: {input_tokens: 100, output_tokens: 0, cost: 0.0000042} });
     } });
   const normalized = normalizeResponse(result, row);
-  assert.equal(normalized.Jev_Status, 'PASS');
+  assert.equal(normalized.Jev_Decision, 'PASS');
   assert.equal(normalized.Jev_Model, 'typesafe/jev-1.13-20260917');
   assert.equal(JSON.parse(normalized.Jev_Raw_Response).usage.cost, 0.0000042);
   assert.throws(() => resolveConnection({ provider: 'openrouter', apiKey: '' }), /OPENROUTER_API_KEY/);
