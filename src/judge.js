@@ -1,4 +1,5 @@
 // Pure functions shared by the CLI and generated n8n Code nodes.
+import {workshopInput} from './workshop.js';
 export const RUBRIC_VERSION = 'social-publication-v2';
 export const JUDGE_VERSION = 'jev-publication-v2.0';
 export const DEFAULT_MODEL = 'jev-1.13.0';
@@ -17,23 +18,24 @@ export function eligibility(row) {
   if (row.__identity_error) return { status: 'ERROR', reason: row.__identity_error };
   if (!clean(row.Test_ID) || !clean(row.Run_ID)) return { status: 'ERROR', reason: 'Test_ID and Run_ID are required.' };
   if (!clean(row.Model_Output)) return { status: 'SKIPPED', reason: 'Model_Output is empty.' };
-  if (!clean(row.User_Input) || row.Context_Status !== 'READY' || !clean(row.Reference_Facts)) return { status: 'NEEDS_CONTEXT', reason: 'Supply brief and approved source text (or explicit no-external-facts note), then mark Context_Status READY.' };
+  if (!clean(row.User_Input) || row.Context_Status !== 'READY' || !clean(row.Reference_Facts)) return { status: 'NEEDS_CONTEXT', reason: 'Add an Approved facts: section with source text (or an explicit no-external-facts note) inside User_Input before judging.' };
   return { status: 'OK', reason: '' };
 }
 export function prepareRows(rows) {
   const counts = new Map();
   for (const row of rows) { const k = JSON.stringify([clean(row.Test_ID), clean(row.Run_ID)]); counts.set(k, (counts.get(k) || 0) + 1); }
-  return rows.map(row => ({ ...row, __identity_error: counts.get(JSON.stringify([clean(row.Test_ID), clean(row.Run_ID)])) > 1 ? 'Duplicate Test_ID / Run_ID; use a separate file for each judge version.' : '' }));
+  return rows.map(row => ({ ...row, __identity_error: counts.get(JSON.stringify([clean(row.Test_ID), clean(row.Run_ID)])) > 1 ? 'Duplicate Test_ID. Keep one row per case and a separate workbook copy for each experiment.' : '' }));
 }
 export function judgeState(row) {
   const ready = eligibility(row);
   if (ready.status !== 'OK') throw new Error(ready.reason);
-  for (const e of TRAIN_EXAMPLES) {
+  const training = TRAIN_EXAMPLES.map(e=>workshopInput({...e,Judge_Split:e.Judge_Split || 'TRAIN'}));
+  for (const e of training) {
     if (e.Judge_Split !== 'TRAIN' || eligibility(e).status !== 'OK' || !['PASS','FAIL'].includes(e.Human_Decision) || !clean(e.Human_Critique) || e.Human_Policy_Version !== RUBRIC_VERSION) throw new Error('Each TRAIN example needs complete source context and a reviewed human decision and critique under this policy.');
   }
-  if (TRAIN_EXAMPLES.some(e => e.Test_ID === row.Test_ID) && ['DEV', 'TEST'].includes(row.Judge_Split)) throw new Error('TRAIN example overlaps DEV/TEST candidate.');
+  if (training.some(e => e.Test_ID === row.Test_ID) && row.Judge_Split !== 'TRAIN') throw new Error('TRAIN example overlaps evaluation candidate.');
   const context = r => ({user_input:clean(r.User_Input),candidate_post:clean(r.Model_Output),reference_facts:clean(r.Reference_Facts),constraints:clean(r.Constraints),persona:clean(r.Persona)||'Professional, clear and accessible for AI engineers and technical leaders.'});
-  return {...context(row),train_examples:TRAIN_EXAMPLES.map(e=>({...context(e),critique:e.Human_Critique,decision:e.Human_Decision}))};
+  return {...context(row),train_examples:training.map(e=>({...context(e),critique:e.Human_Critique,decision:e.Human_Decision}))};
 }
 export function buildRequest(row, model = DEFAULT_MODEL) {
   if (!clean(model)) throw new Error('Jev model is empty');

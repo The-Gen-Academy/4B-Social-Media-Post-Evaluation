@@ -5,17 +5,18 @@ import { parse } from 'csv-parse/sync';
 import { stringify } from 'csv-stringify/sync';
 import { callJev, resolveConnection, providerConfig } from './client.js';
 import { callReview } from './review-client.js';
-import { WORKSHOP_COLUMNS, workshopResult } from './workshop.js';
+import { JUDGE_COLUMNS, workshopInput, judgeResult } from './workshop.js';
 import { buildRequest, buildReviewRequest, normalizeResponse, normalizeReview, blankResult, summarize, prepareRows, eligibility, REVIEW_MODEL } from './judge.js';
 const usage = `Usage: npm run judge -- --input posts.csv --output results/baseline.csv
   --provider openrouter     Jev provider: openrouter (default), typesafe, gateway
   --model MODEL             Jev model override
   --review-model MODEL      Independent LLM reviewer on OpenRouter
   --dry-run                 Export requests without API calls
-  --workshop                Export the 35 workbook columns (human labels retained)
+  --workshop                Export the seven Judge-tab columns; save details separately
   --report-only             Report by run, judge version, model and split
   --help                    Show usage
-Source text and Context_Status=READY are required. Use a new output filename.`;
+Use the six Evaluation Log columns, with an Approved facts: section in User_Input.
+Advanced CSV inputs with separate source fields also work. Use a new output filename.`;
 async function main() {
   const { values } = parseArgs({ options: { input: {type:'string'}, output: {type:'string',default:'results/jev.csv'}, provider:{type:'string'}, model:{type:'string'}, 'review-model':{type:'string'}, 'dry-run':{type:'boolean'}, workshop:{type:'boolean'}, 'report-only':{type:'boolean'}, help:{type:'boolean'} } });
   if (values.help) return console.log(usage);
@@ -27,13 +28,15 @@ async function main() {
   const rows = prepareRows(parse(await readFile(input,'utf8'), { bom:true, skip_empty_lines:true, columns: cols => {
     headers = cols;
     if (new Set(cols).size !== cols.length) throw new Error('Duplicate CSV headers.');
-    if (!cols.includes('Model_Output')) throw new Error('Model_Output column is required.');
+    if (!values['report-only'] && !cols.includes('Model_Output')) throw new Error('Model_Output column is required.');
     return cols;
-  } }));
+  } }).map(workshopInput));
   if (!headers) throw new Error('CSV is empty.');
   if (values['report-only']) {
-    if (!headers.includes('Jev_Run_Status')) throw new Error('Report requires a v2 judged CSV.');
-    return console.log(JSON.stringify(summarize(rows),null,2));
+    if (headers.includes('Jev_Run_Status')) return console.log(JSON.stringify(summarize(rows),null,2));
+    if (!headers.includes('Jev_Status')) throw new Error('Report requires a judged CSV.');
+    const details = (await readFile(`${input}.details.jsonl`,'utf8')).trim();
+    return console.log(JSON.stringify(summarize(details ? details.split('\n').map(line=>JSON.parse(line)) : []),null,2));
   }
   const provider = values.provider || process.env.JEV_PROVIDER || 'openrouter';
   const model = values.model || process.env.JEV_MODEL || providerConfig(provider).model;
@@ -47,8 +50,12 @@ async function main() {
   if (rows.some(row => eligibility(row).status === 'OK')) { resolveConnection({provider}); if (!process.env.OPENROUTER_API_KEY?.trim()) throw new Error('Set OPENROUTER_API_KEY for the independent LLM critique.'); }
   await writeFile(output,'',{flag:'wx'});
   await writeFile(`${output}.summary.json`,'',{flag:'wx'});
-  const results = [], columns = values.workshop ? WORKSHOP_COLUMNS : [...new Set([...headers,...WORKSHOP_COLUMNS,...Object.keys(blankResult(''))])];
-  const persist = () => writeFile(output,stringify(values.workshop ? results.map(workshopResult) : results,{header:true,columns,escape_formulas:true}));
+  await writeFile(`${output}.details.jsonl`,'',{flag:'wx'});
+  const results = [], columns = values.workshop ? JUDGE_COLUMNS : [...new Set([...headers,...Object.keys(rows[0] || {}),...Object.keys(blankResult(''))])];
+  const persist = async () => {
+    await writeFile(output,stringify(values.workshop ? results.map(judgeResult) : results,{header:true,columns,escape_formulas:true}));
+    await writeFile(`${output}.details.jsonl`,results.map(r=>JSON.stringify(r)).join('\n')+'\n');
+  };
   for (const row of rows) {
     const ready = eligibility(row);
     let evaluated = { ...row, ...blankResult(ready.status,ready.reason) };

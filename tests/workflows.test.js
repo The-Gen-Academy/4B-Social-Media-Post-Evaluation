@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 import {row,responseFor,reviewFor} from './fixtures.js';
+import {WORKSHOP_COLUMNS,JUDGE_COLUMNS,workshopResult} from '../src/workshop.js';
 const files=['Social Media Post Generation Workflow.json','Social Media Jev Judge Only.json','Social Media Post Generation with Jev Judge.json'];
 for(const file of files) test(file+' has valid graph, no shipped secrets, and executable embedded code',async()=>{
   const w=JSON.parse(await readFile(file,'utf8')),names=new Set(w.nodes.map(n=>n.name));
@@ -16,6 +17,9 @@ for(const file of files) test(file+' has valid graph, no shipped secrets, and ex
     if(!Array.isArray(result))stored[name]=result.json;return JSON.parse(JSON.stringify(result));
   };
   const validated=exec('Validate Row Identity',row,[row,{...row,Test_ID:'T2'}]);assert.equal(validated.length,2);
+  const simple=exec('Validate Row Identity',null,[workshopResult(row)])[0].json;
+  assert.equal(simple.Human_Decision,'PASS');assert.equal(simple.Human_Critique,row.Human_Critique);assert.equal(simple.Context_Status,'READY');
+  const duplicate=exec('Validate Row Identity',null,[workshopResult(row),workshopResult(row)]);assert(duplicate.every(r=>r.json.__identity_error));
   if(names.has('Prepare Generation')){
     const p=exec('Prepare Generation',{...row,Model_Output:''});assert.equal(p.json.ready.status,'READY');
     const generated=exec('Keep Generated Post',{choices:[{finish_reason:'stop',message:{content:'New post'}}]});assert.equal(generated.json.Human_Decision,'');assert.equal(generated.json.Jev_Decision,'');
@@ -26,5 +30,11 @@ for(const file of files) test(file+' has valid graph, no shipped secrets, and ex
     const llm=exec('Normalize Independent Review',reviewFor());assert.equal(llm.json.Jev_Decision,'FAIL');assert.equal(llm.json.LLM_Decision,'PASS');assert.equal(llm.json.Review_Required,true);
     const blocked=exec('Prepare Jev Request',{...row,Context_Status:''});const kept=exec('Keep Unevaluated Row',blocked.json);assert.equal(kept.json.Jev_Decision,'');assert.equal(kept.json.Jev_Run_Status,'NEEDS_CONTEXT');
   }
-  const exported=exec('Workbook Results',row,[{...row,Model_Output:'=formula()'}]);assert.equal(Object.keys(exported[0].json).length,35);assert.equal(exported[0].json.Model_Output,"'=formula()");
+  const exported=exec('Workbook Results',row,[{...row,Test_ID:'=formula()',Model_Output:'=formula()'}]);
+  assert.deepEqual(Object.keys(exported[0].json),names.has('Prepare Jev Request')?JUDGE_COLUMNS:WORKSHOP_COLUMNS);
+  assert.equal(exported[0].json.Test_ID,"'=formula()");
+  if(names.has('Human Review Results')){
+    const human=exec('Human Review Results',row,[row]);assert.deepEqual(Object.keys(human[0].json),WORKSHOP_COLUMNS);
+    assert.equal(human[0].json.Status,'PASS');assert.equal(human[0].json.Human_Feedback,row.Human_Critique);
+  }
 });
