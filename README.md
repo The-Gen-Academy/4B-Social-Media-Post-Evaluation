@@ -131,3 +131,9 @@ Tests cover binary response validation, ties, missing context, duplicate identit
 label isolation, independent critiques, CSV round trips, provider errors and
 embedded n8n code. See [integration details](docs/jev-integration.md) for contracts
 and validation limits.
+
+## Separate clinic experiment
+
+This development branch also contains the [clinic intent evaluation report](docs/clinic-intent-experiments.md)
+and its workflow. That experiment has a different dataset and task; it is not the
+social-post publication policy or this assignment's evaluation result.
