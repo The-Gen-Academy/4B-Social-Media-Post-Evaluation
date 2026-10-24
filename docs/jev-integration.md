@@ -40,8 +40,9 @@ enter model requests. Current human labels, critiques, previous judgments,
 failure tags and historical review notes are excluded. Supply source evidence
 independently; a generated post cannot be evidence for its own concrete claims.
 
-`Human_Decision`, `Human_Critique`, `Human_Reviewer` and
+`Human_Decision`, `Human_Critique` and
 `Human_Policy_Version=social-publication-v2` form the human reference record.
+`Human_Reviewer` is optional and can stay blank for this individual exercise.
 Review the exact input/output packet, not an earlier version of the post.
 The generator clears those fields whenever it creates a new post and moves the
 previous critique into historical notes. Existing posts are preserved as-is.
@@ -94,7 +95,7 @@ completed row, and exits nonzero on evaluation errors.
 2. Assign related cases together to 6 TRAIN, 12 DEV and 12 TEST examples. Include
    both labels where possible; report actual class counts and any additional cases.
 3. Add only complete human-reviewed TRAIN records to `TRAIN_EXAMPLES` in
-   `src/judge.js`. Use the CSV field names, including Judge_Split=TRAIN, reviewer,
+   `src/judge.js`. Use the CSV field names, including Judge_Split=TRAIN,
    policy, brief, facts, post, decision and critique. The defaults are intentionally
    empty, so the initial judge is a zero-shot baseline until students add examples.
 4. Iterate on DEV disagreements, checking the human label as well as the judge.

@@ -29,7 +29,7 @@ export function judgeState(row) {
   const ready = eligibility(row);
   if (ready.status !== 'OK') throw new Error(ready.reason);
   for (const e of TRAIN_EXAMPLES) {
-    if (e.Judge_Split !== 'TRAIN' || eligibility(e).status !== 'OK' || !['PASS','FAIL'].includes(e.Human_Decision) || !clean(e.Human_Critique) || !clean(e.Human_Reviewer) || e.Human_Policy_Version !== RUBRIC_VERSION) throw new Error('Each TRAIN example needs complete source context and a reviewed human decision and critique under this policy.');
+    if (e.Judge_Split !== 'TRAIN' || eligibility(e).status !== 'OK' || !['PASS','FAIL'].includes(e.Human_Decision) || !clean(e.Human_Critique) || e.Human_Policy_Version !== RUBRIC_VERSION) throw new Error('Each TRAIN example needs complete source context and a reviewed human decision and critique under this policy.');
   }
   if (TRAIN_EXAMPLES.some(e => e.Test_ID === row.Test_ID) && ['DEV', 'TEST'].includes(row.Judge_Split)) throw new Error('TRAIN example overlaps DEV/TEST candidate.');
   const context = r => ({user_input:clean(r.User_Input),candidate_post:clean(r.Model_Output),reference_facts:clean(r.Reference_Facts),constraints:clean(r.Constraints),persona:clean(r.Persona)||'Professional, clear and accessible for AI engineers and technical leaders.'});
@@ -78,7 +78,7 @@ export function summarize(rows) {
     if (row.LLM_Run_Status === 'ERROR') g.critique_errors++;
     const valid = eligibility(row).status === 'OK' && row.Jev_Run_Status === 'OK' && ['PASS', 'FAIL'].includes(row.Jev_Decision);
     if (valid) g.judged++;
-    const humanValid = eligibility(row).status === 'OK' && ['PASS', 'FAIL'].includes(row.Human_Decision) && clean(row.Human_Critique) && clean(row.Human_Reviewer) && row.Human_Policy_Version === RUBRIC_VERSION;
+    const humanValid = eligibility(row).status === 'OK' && ['PASS', 'FAIL'].includes(row.Human_Decision) && clean(row.Human_Critique) && row.Human_Policy_Version === RUBRIC_VERSION;
     if (!humanValid) continue;
     g.labeled++;
     if (valid) { g.compared++; g[`human_${row.Human_Decision.toLowerCase()}_judge_${row.Jev_Decision.toLowerCase()}`]++; }
