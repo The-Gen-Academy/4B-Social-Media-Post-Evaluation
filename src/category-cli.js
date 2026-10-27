@@ -7,9 +7,9 @@ import {CATEGORY_COLUMNS,CATEGORY_MODEL,prepareCategoryRows,buildCategoryRequest
 import {callCategoryJudge} from './category-client.js';
 
 async function main() {
-  const {values} = parseArgs({options:{input:{type:'string'},output:{type:'string',default:'results/category_judge.csv'},category:{type:'string',default:'Missing Practical Detail'},definition:{type:'string'},contrast:{type:'string'},model:{type:'string',default:CATEGORY_MODEL},'dry-run':{type:'boolean'},help:{type:'boolean'}}});
+  const {values} = parseArgs({options:{input:{type:'string'},output:{type:'string',default:'results/category_judge.csv'},category:{type:'string',default:'Low Informational Value'},definition:{type:'string'},contrast:{type:'string'},model:{type:'string',default:CATEGORY_MODEL},'dry-run':{type:'boolean'},help:{type:'boolean'}}});
   if (values.help || !values.input) {
-    console.log('npm run judge:category -- --input failure-traces.csv --category "Missing Practical Detail" --output results/category-v1.csv\nOptional: --definition "Your rule" --contrast "Boundary with other categories" --model MODEL --dry-run\nSet OPENAI_API_KEY in .env. The input must contain reviewed FAIL rows with a main Failure_Category.');
+    console.log('npm run judge:category -- --input failure-traces.csv --category "Low Informational Value" --output results/category-v1.csv\nOptional: --definition "Your rule" --contrast "Boundary with other categories" --model MODEL --dry-run\nSet OPENAI_API_KEY in .env. The input must contain reviewed FAIL rows with a main Failure_Category.');
     if (!values.help) process.exitCode = 1;
     return;
   }

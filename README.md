@@ -37,7 +37,7 @@ If evidence needed to judge a claim is missing, leave that dimension unfinished 
 
 ## Part 2: Analyse failures and save failed traces
 
-Update Failure Analysis using the patterns in your feedback. Start with the five supplied categories: Unsupported Claims, Missing Practical Detail, Wrong Content Type, Missing or Inappropriate CTA, and Missing Context. Read their definitions and suggested fixes in that tab. Choose one main category for each failed post in Evaluation Log. If none fits, add your own clearly named category to the dropdown and Failure Analysis, with a short definition and a proposed fix. Make sure its count includes the matching failed posts. Existing counts include the worked examples, so report the failures from your ten new posts separately.
+Update Failure Analysis using the patterns in your feedback. Start with the four supplied categories: Incorrect or Hallucinated Content, Low Informational Value, Poor Framing, and Missing or Inappropriate CTA. Read their definitions and suggested fixes in that tab. Choose one main category for each failed post in Evaluation Log. If none fits, add your own clearly named category to the dropdown and Failure Analysis, with a short definition and a proposed fix. Make sure its count includes the matching failed posts. Existing counts include the worked examples, so report the failures from your ten new posts separately.
 
 Add every failed post to Failure Traces. Keep its post ID, original request, generated output, all five dimension decisions, overall FAIL and human feedback together. Assign one failure category to each failed trace, matching its category in Evaluation Log. The main category should be inferable from the feedback; keep any secondary problems in the explanation. For a few failures, also inspect the saved n8n execution to check what instructions and facts reached the model. Use this evidence to identify a likely cause and a specific fix.
 
@@ -60,7 +60,7 @@ Report the original and revised PASS counts for the same requests, noting improv
 Choose the **one failure category you care about most**. Complete your human reviews and assign one main category to every failed trace first. This exercise tests whether the judge identifies the same **main problem** you identified. It does not replace the five human PASS/FAIL decisions.
 
 1. Import [Social Media LLM Category Judge.json](Social%20Media%20LLM%20Category%20Judge.json) into n8n. Attach an **OpenAI API credential** to **Ask OpenAI**. The model is `gpt-5.4-mini`, called directly through OpenAI.
-2. Open **Choose Failure Category**. Edit the three fields at the top: the exact category name, a short definition, and a contrast rule explaining how it differs from similar problems. The five existing definitions are supplied in the node.
+2. Open **Choose Failure Category**. Edit the three fields at the top: the exact category name, a short definition, and a contrast rule explaining how it differs from similar problems. The four existing definitions are supplied in the node.
 3. Export **Failure Traces** as CSV and upload it through the workflow. Include traces whose main category is your chosen category and traces assigned to other categories. Keep the saved posts and human labels fixed.
 4. Download `category_judge_results.csv`. Open **Calibration Summary** to see agreement, missed matches, false alarms and unresolved cases. No extra workbook tab is needed.
 

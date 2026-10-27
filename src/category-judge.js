@@ -2,25 +2,21 @@
 export const CATEGORY_MODEL = 'gpt-5.4-mini';
 export const CATEGORY_COLUMNS = ['Test_ID','Target_Category','Human_Category','Ground_Truth','Judge_Prediction','Judge_Reason','Match','Run_Status'];
 export const FAILURE_CATEGORIES = {
-  'Unsupported Claims': {
-    definition:'The main problem is an invented, unsupported or contradictory factual claim, such as a testimonial, workshop detail or promised outcome.',
-    contrast_rule:'Do not infer that a claim is false just because source facts are missing. If the required evidence is unavailable, return UNRESOLVED. Missing explanation alone is not an unsupported claim.',
+  'Incorrect or Hallucinated Content': {
+    definition:'The main problem is a false, unsupported or invented claim, including dates, capabilities, statistics, testimonials or promised outcomes.',
+    contrast_rule:'Do not infer that a claim is false just because source facts are missing. If the required evidence is unavailable, return UNRESOLVED. An unclear explanation alone belongs under Poor Framing.',
   },
-  'Missing Practical Detail': {
-    definition:'The main problem is that the post promises useful resources, examples or guidance but does not supply concrete details the reader can use.',
-    contrast_rule:'A missing closing action alone belongs elsewhere. When the entire output advertises a resource instead of producing the requested resource, the main problem is Wrong Content Type.',
+  'Low Informational Value': {
+    definition:'The main problem is that the post is generic or lacks the useful resources, examples or practical substance it promises or was asked to provide. This includes promotional copy instead of the requested substantive content.',
+    contrast_rule:'If useful substance is present but its wording, context or tone gets in the way, choose Poor Framing instead. A missing closing action alone belongs under Missing or Inappropriate CTA. An invented factual claim belongs under Incorrect or Hallucinated Content when that is the main problem.',
   },
-  'Wrong Content Type': {
-    definition:'The main problem is that the output delivers a different kind of content from the request, for example promotional copy about a cheat sheet instead of the cheat sheet itself.',
-    contrast_rule:'A post that attempts the requested content but lacks useful examples has a practical-detail problem. Missing a closing action alone does not make the content type wrong.',
+  'Poor Framing': {
+    definition:'The main problem is wordy, unclear or poorly contextualized writing, unsuitable tone, or a weak opening that gets in the way of understanding the content.',
+    contrast_rule:'When the useful substance itself is missing, choose Low Informational Value instead. Use Missing or Inappropriate CTA when the closing action is the main issue. Minor personal style preferences alone are not failures.',
   },
   'Missing or Inappropriate CTA': {
     definition:'The main problem is a missing, unclear or unsuitable closing action or question. The rest of the post substantially delivers the requested content.',
     contrast_rule:'A declarative takeaway is appropriate when the request prohibits a call to action or question. If the post also fails to deliver its core content, do not automatically make the missing CTA its main problem.',
-  },
-  'Missing Context': {
-    definition:'The main problem is that an important claim or explanation lacks the scope, background or qualification needed for the intended reader to understand it.',
-    contrast_rule:'Distinguish an unclear or overbroad explanation from a claim contradicted by supplied facts, a missing practical example, or a missing closing action. A minor wording preference is not enough.',
   },
 };
 const text = value => String(value ?? '').trim();

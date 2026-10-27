@@ -80,11 +80,11 @@ for(const [file,options] of [
 // A separate, small workshop path. It does not generate posts or call Jev.
 function buildCategoryWorkflow() {
   const configure = `// Choose ONE main failure category. Edit these three fields before running.
-// The five existing definitions are in FAILURE_CATEGORIES below.
+// The four existing definitions are in FAILURE_CATEGORIES below.
 const config = {
-  category: 'Missing Practical Detail',
-  definition: 'The main problem is that the post promises useful resources, examples or guidance but does not supply concrete details the reader can use.',
-  contrast_rule: 'A missing closing action alone belongs elsewhere. When the entire output advertises a resource instead of producing the requested resource, the main problem is Wrong Content Type.',
+  category: 'Low Informational Value',
+  definition: 'The main problem is that the post is generic or lacks the useful resources, examples or practical substance it promises or was asked to provide. This includes promotional copy instead of the requested substantive content.',
+  contrast_rule: 'If useful substance is present but its wording, context or tone gets in the way, choose Poor Framing instead. A missing closing action alone belongs under Missing or Inappropriate CTA. An invented factual claim belongs under Incorrect or Hallucinated Content when that is the main problem.',
 };
 ${categoryCore}
 const input = $input.all();

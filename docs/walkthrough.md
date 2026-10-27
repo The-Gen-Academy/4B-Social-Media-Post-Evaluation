@@ -30,7 +30,7 @@ Run the failed requests and at least one previously passing request, with their 
 
 For local Docker setups, open the test form on the same host port as the n8n editor. If the editor is at `localhost:5679` but the form URL shows `localhost:5678`, change only the port to `5679`. Start Execute workflow before opening the form.
 
-For example, choose **Missing Practical Detail**. A trace assigned that main category has human ground truth TRUE. A trace assigned **Unsupported Claims** has ground truth FALSE. The judge must independently decide whether Missing Practical Detail is the **main** issue. FALSE does not mean the post passes, and a secondary issue does not automatically make the answer TRUE.
+For example, choose **Low Informational Value**. A trace assigned that main category has human ground truth TRUE. A trace assigned **Incorrect or Hallucinated Content** has ground truth FALSE. The judge must independently decide whether Low Informational Value is the **main** issue. FALSE does not mean the post passes, and a secondary issue does not automatically make the answer TRUE.
 
 OpenAI receives only the selected definition and contrast rule, request, saved post and available approved facts. Human feedback, main category and five dimension decisions stay out of the request. The comparison happens afterward. If evidence is insufficient, the prediction stays blank with Run_Status UNRESOLVED. Failed API calls stay blank with Run_Status ERROR. Neither counts as FALSE or as a correct decision.
 
@@ -42,7 +42,7 @@ Set `OPENAI_API_KEY` in the ignored local `.env`, then run:
 
 ```sh
 npm ci
-npm run judge:category -- --input failure-traces.csv --category "Missing Practical Detail" --output results/category-v1.csv
+npm run judge:category -- --input failure-traces.csv --category "Low Informational Value" --output results/category-v1.csv
 ```
 
 Use `--definition "Your rule"` and `--contrast "How to distinguish similar issues"` to change the prompt. Use `--dry-run` to inspect requests without API calls. Each output filename must be new. The CLI writes the results CSV and a `.summary.json` file.

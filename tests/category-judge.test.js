@@ -7,20 +7,21 @@ import {join,resolve} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {parse} from 'csv-parse/sync';
 import {stringify} from 'csv-stringify/sync';
-import {CATEGORY_COLUMNS,prepareCategoryRows,buildCategoryRequest,normalizeCategoryResponse,categoryResult,categorySummary} from '../src/category-judge.js';
+import {CATEGORY_COLUMNS,FAILURE_CATEGORIES,prepareCategoryRows,buildCategoryRequest,normalizeCategoryResponse,categoryResult,categorySummary} from '../src/category-judge.js';
 import {callCategoryJudge} from '../src/category-client.js';
 import {workshopInput} from '../src/workshop.js';
 
-const config = {category:'Missing Practical Detail'};
-const raw = {Test_ID:'T1',User_Input:'Write a practical post.',Model_Output:'FIXTURE_TRUE: use best practices.',Status:'FAIL',Failure_Category:'Missing Practical Detail'};
+const config = {category:'Low Informational Value'};
+const raw = {Test_ID:'T1',User_Input:'Write a practical post.',Model_Output:'FIXTURE_TRUE: use best practices.',Status:'FAIL',Failure_Category:'Low Informational Value'};
 const response = (verdict='TRUE') => ({choices:[{finish_reason:'stop',message:{content:JSON.stringify({verdict,reason:'Fixture evidence for '+verdict})}}]});
 
 test('category input keeps reviewed failed traces and exact trimmed main-category labels',()=>{
-  const rows = prepareCategoryRows([raw,{...raw,Test_ID:'T2',Failure_Category:' Missing Context '},{...raw,Test_ID:'T3',Status:'PASS'},{Test_ID:'placeholder'}],config);
+  assert.deepEqual(Object.keys(FAILURE_CATEGORIES),['Incorrect or Hallucinated Content','Low Informational Value','Poor Framing','Missing or Inappropriate CTA']);
+  const rows = prepareCategoryRows([raw,{...raw,Test_ID:'T2',Failure_Category:' Poor Framing '},{...raw,Test_ID:'T3',Status:'PASS'},{Test_ID:'placeholder'}],config);
   assert.equal(rows.length,2);
   assert.equal(categoryResult(rows[0]).Ground_Truth,'TRUE');
   assert.equal(categoryResult(rows[1]).Ground_Truth,'FALSE');
-  assert.throws(()=>prepareCategoryRows([raw],{category:'missing practical detail',definition:'A rule'}),/does not match/);
+  assert.throws(()=>prepareCategoryRows([raw],{category:'low informational value',definition:'A rule'}),/does not match/);
   assert.throws(()=>prepareCategoryRows([{...raw,Failure_Category:''}],config),/needs Failure_Category/);
   assert.throws(()=>prepareCategoryRows([{...raw,Status:'PENDING'}],config),/Complete the human review/);
   assert.throws(()=>prepareCategoryRows([raw,raw],config),/Duplicate Test_ID/);
@@ -43,7 +44,7 @@ test('request uses only selected definition and trace evidence, never human labe
 });
 
 test('TRUE and FALSE mean selected main category, never overall publication status',()=>{
-  const rows = prepareCategoryRows([raw,{...raw,Test_ID:'T2',Failure_Category:'Wrong Content Type'}],config);
+  const rows = prepareCategoryRows([raw,{...raw,Test_ID:'T2',Failure_Category:'Missing or Inappropriate CTA'}],config);
   const a = normalizeCategoryResponse(response('TRUE'),rows[0]);
   const b = normalizeCategoryResponse(response('FALSE'),rows[1]);
   assert.equal(a.Ground_Truth,'TRUE');assert.equal(a.Match,'MATCH');
@@ -69,7 +70,7 @@ test('insufficient evidence, refusals, malformed JSON and failed calls never bec
 });
 
 test('summary exposes denominators, both human classes, unresolved cases and errors',()=>{
-  const rows = prepareCategoryRows([raw,{...raw,Test_ID:'T2',Failure_Category:'Missing Context'}],config);
+  const rows = prepareCategoryRows([raw,{...raw,Test_ID:'T2',Failure_Category:'Poor Framing'}],config);
   const results = [normalizeCategoryResponse(response('TRUE'),rows[0]),normalizeCategoryResponse(response('FALSE'),rows[0]),normalizeCategoryResponse(response('TRUE'),rows[1]),normalizeCategoryResponse(response('FALSE'),rows[1]),normalizeCategoryResponse(response('UNRESOLVED'),rows[0]),categoryResult(rows[1],'','Failure','ERROR')];
   const summary = categorySummary(results);
   assert.equal(summary.total_traces,6);assert.equal(summary.completed,4);assert.equal(summary.accuracy_count,'2/4');assert.equal(summary.accuracy,0.5);assert.equal(summary.coverage,4/6);
@@ -109,7 +110,8 @@ test('standalone n8n workflow calls OpenAI once per saved trace and exports one 
     if(!Array.isArray(result)) stored[name]=result.json;
     return JSON.parse(JSON.stringify(result));
   };
-  const input = exec('Choose Failure Category',null,[raw,{...raw,Test_ID:'=T2',Failure_Category:'Wrong Content Type'},{Test_ID:'empty'}]);
+  const input = exec('Choose Failure Category',null,[raw,{...raw,Test_ID:'=T2',Failure_Category:'Missing or Inappropriate CTA'},{Test_ID:'empty'}]);
+  assert.deepEqual(input[0].json.category_config,{category:'Low Informational Value',...FAILURE_CATEGORIES['Low Informational Value']});
   const results = [];
   for (const item of input) {
     const prepared = exec('Prepare Category Request',item.json);
@@ -126,7 +128,7 @@ test('standalone n8n workflow calls OpenAI once per saved trace and exports one 
 
 test('category CLI handles quoted CSV, saves API errors, and refuses overwrites',async()=>{
   const dir = await mkdtemp(join(tmpdir(),'category-judge-')),input=join(dir,'in.csv'),output=join(dir,'out.csv');
-  await writeFile(input,stringify([raw,{...raw,Test_ID:'T2',Model_Output:'FIXTURE_FALSE: a post with a comma, and\na new line.',Failure_Category:'Wrong Content Type'},{...raw,Test_ID:'T3',Model_Output:'FIXTURE_ERROR',Failure_Category:'Missing Context'}],{header:true}));
+  await writeFile(input,stringify([raw,{...raw,Test_ID:'T2',Model_Output:'FIXTURE_FALSE: a post with a comma, and\na new line.',Failure_Category:'Missing or Inappropriate CTA'},{...raw,Test_ID:'T3',Model_Output:'FIXTURE_ERROR',Failure_Category:'Poor Framing'}],{header:true}));
   const run = args=>spawnSync(process.execPath,['--import',resolve('tests/mock-category-provider.js'),'src/category-cli.js',...args],{encoding:'utf8',env:{...process.env,OPENAI_API_KEY:'fixture-key'}});
   const first = run(['--input',input,'--output',output]);assert.equal(first.status,1,first.stderr);
   const results = parse(await readFile(output,'utf8'),{columns:true});
