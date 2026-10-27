@@ -1,100 +1,29 @@
-# Project walkthrough
+# Run the 10-post exercise in n8n
 
-## 1. Prepare one case
+## Generate
 
-Start in Evaluation Log. Use one row per Test_ID. User_Input contains the whole
-brief, including source facts, so you do not need separate context columns:
+1. Download `Social Media Post Generation Workflow.json` and `examples/10-post-requests.csv` from this repository. Import the JSON into n8n.
+2. Create a Header Auth credential with name `Authorization` and value `Bearer <OpenRouter API key>`. Attach it to **Generate Post**. Keep credentials in n8n, not in the prompt or CSV.
+3. Select **Execute workflow**, open the test form in **Upload Posts CSV**, and upload the request CSV. Wait for all ten requests to finish.
+4. Download `linkedin_posts_output.csv` from **Download Results CSV**. Copy its three data columns into **Evaluation Log A:C**, starting in row 2. Keep the template headers and the review/formula cells to the right. This is one paste for the whole run.
+5. Review every dimension using its PASS/FAIL dropdown. Explain failures. **Status** is calculated: any FAIL gives FAIL; all five PASS gives PASS; an unfinished review shows PENDING.
 
-~~~text
-Write a LinkedIn post for beginning AI engineers.
-Explain one practical retrieval test, then ask a relevant question.
-Use at most 80 words.
+The supplied scenarios and facts are fictional practice data. You can change them before running. If you change the requests already in Evaluation Log, export that tab as CSV instead. Generation requires an `Approved facts:` section and a blank `Model_Output`. Existing posts are preserved, not regenerated. An incomplete generation stops the download with an actionable error; inspect the named request and rerun after fixing it.
 
-Approved facts:
-Retrieval selects source passages for an answer. Irrelevant passages can leave
-an answer unsupported. No benchmark result or improvement percentage is supplied.
-Source: instructor-approved facts for this teaching example.
-~~~
+## Revise
 
-The exact **Approved facts:** heading lets the workflow find the evidence.
-Put audience and constraints before it. Add actual excerpts, not just URLs.
-If the task needs no external factual claims, state that under the heading.
+Save the baseline workflow. In **Prepare Generation**, find `GENERATOR_PROMPT` and change one instruction. Keep the original inputs and the evaluation rubric fixed.
 
-## 2. Generate and review
+For the rerun, use the same requests with empty posts. Run the failed cases and at least one previously passing case. Paste only the three generated fields into **Revised Posts A:C**, starting in row 2. Review the five dimensions afresh. **Comparison** matches the IDs automatically, even if the revised rows are in a different order. The template covers P01 through P10; record any additional case separately.
 
-Import Social Media Post Generation Workflow.json into n8n. Attach OpenRouter
-Header Auth to Generate Post. Export Evaluation Log as CSV and upload it through
-Upload Posts CSV. Download the output from Download Results CSV and paste its
-six data columns into Evaluation Log A:F.
+## Optional judges
 
-Read the post, write Human_Feedback, then select PASS or FAIL in Status.
-Do this yourself before viewing any automated opinion.
+1. Import `Social Media Jev Judge Only.json`.
+2. Attach a separate Header Auth credential to **Call Jev**: name `Authorization`, value `Bearer <TypeSafe API key>`. Its preconfigured URL is `https://api.typesafe.ai/v1/systemone`, and its model is `jev-1.13.0`.
+3. Attach your OpenRouter Header Auth credential to **Independent LLM Review**. The LLM is GPT-4.1-mini.
+4. Export Evaluation Log as CSV after completing your human reviews. Upload it through the workflow's test form.
+5. Download `judge_results.csv` and import the whole file into **Judge**, replacing that tab's contents. It contains six rows per post: five dimensions and Overall. Preserve each judge run in a separately named results file before importing a later run.
 
-| Post | Status | Critique |
-| --- | --- | --- |
-| Gives a practical retrieval inspection step and a relevant closing question. | PASS | Delivers the requested test within the length limit; claims match the source facts. |
-| Claims retrieval improves accuracy by 40%. | FAIL | The source contains no benchmark supporting 40%; remove or substantiate the claim. |
-| Says retrieval matters but gives no test. | FAIL | Omits the practical inspection step requested in the brief. |
+Compare Human_Status with Jev_Status and LLM_Status for each dimension. Blank decisions, ties and API errors need attention and are not passing results. The LLM's reason belongs to the LLM's independent review.
 
-These are teaching illustrations, not measured model results.
-If facts are missing, leave Status blank and explain what is needed in feedback.
-If a generation call fails, the row remains present with blank output/status and
-a Generation issue message. Inspect the n8n execution and retry after fixing it.
-
-## 3. Find a failure pattern
-
-Give each FAIL one Failure_Category. In Failure Analysis, enter the same
-category text; Count updates automatically. Add a Suggested_Fix.
-Use Failure Traces for selected cases: quote the Evidence, inspect the n8n
-execution, distinguish a Likely_Cause from observation, and record a Proposed_Fix.
-
-The workbook retains earlier instructor feedback on the original posts.
-Re-review it under the current brief; it is not an automatically approved label.
-
-## 4. Compare a change
-
-Keep the baseline workbook. Make a revised copy, retain Test_ID and User_Input,
-and clear Model_Output, Human_Feedback, Status and Failure_Category before
-generating again. Review the new posts afresh.
-
-Match Test_IDs between copies. Count fixes (FAIL→PASS), regressions (PASS→FAIL)
-and the two unchanged outcomes. Save the prompt/settings and workflow execution
-with each copy. Use separate copies for the 10 reserved cases and report those
-results separately from the 30 development cases. Do not mix multiple versions
-of the same post into one Evaluation Log.
-
-## 5. Optional: run and calibrate a judge
-
-Complete your human review first. Save frozen TRAIN, DEV and TEST workbook/CSV
-copies. Import Social Media Jev Judge Only.json; attach OpenRouter Header Auth
-to Call Jev and Independent LLM Review.
-
-Upload the six-column Evaluation Log CSV. Download judge_results.csv from
-Download Results CSV. Paste its seven data columns into the **Judge** tab A:G:
-
-| Column | Meaning |
-| --- | --- |
-| Test_ID | Links to the exact post in this workbook's Evaluation Log. |
-| Human_Status | Your reference PASS/FAIL from the evaluated file. |
-| Jev_Status | Jev's PASS/FAIL prediction. |
-| LLM_Critique | A separate LLM's evidence-based critique. |
-| LLM_Status | That separate LLM's PASS/FAIL opinion. |
-| Run_Status | Whether each model completed, failed or lacked context. |
-| Review_Notes | Execution issues and your investigation of disagreements. |
-
-Do not paste these results over the human review. Jev cannot write prose:
-LLM_Critique is an independent opinion, not an explanation of Jev's decision.
-Review errors and blank decisions; do not count them as PASS or quality FAIL.
-
-Compare Human_Status with Jev_Status. Use DEV disagreements to revise the judge
-and only TRAIN cases as prompt examples. Freeze it, then evaluate TEST once.
-Save a new workbook copy for each judge version. Record counts, false-pass and
-false-fail rates, and valid decisions / attempted cases in your submission.
-
-The combined workflow also has Download Posts CSV (six columns) and
-Download Results CSV (seven judge columns). Review posts before opening judge
-results. Generation-only followed by judge-only is the simplest learning path.
-
-For a runnable illustration, examples/posts.csv contains three constructed
-cases with approved facts and human critiques. Keep them separate from measured
-student results. See jev-integration.md for TRAIN formatting and CLI details.
+`Social Media Post Generation with Jev Judge.json` combines generation and judging for an instructor demonstration. **Download Posts CSV** contains the three post fields; **Download Results CSV** contains the dimension reviews. Complete human review before opening automated results.

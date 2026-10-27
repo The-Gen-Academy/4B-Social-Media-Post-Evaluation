@@ -12,10 +12,10 @@ const usage = `Usage: npm run judge -- --input posts.csv --output results/baseli
   --model MODEL             Jev model override
   --review-model MODEL      Independent LLM reviewer on OpenRouter
   --dry-run                 Export requests without API calls
-  --workshop                Export the seven Judge-tab columns; save details separately
+  --workshop                Export the Judge-tab rows; save details separately
   --report-only             Report by run, judge version, model and split
   --help                    Show usage
-Use the six Evaluation Log columns, with an Approved facts: section in User_Input.
+Use the Evaluation Log columns, with an Approved facts: section in User_Input.
 Advanced CSV inputs with separate source fields also work. Use a new output filename.`;
 async function main() {
   const { values } = parseArgs({ options: { input: {type:'string'}, output: {type:'string',default:'results/jev.csv'}, provider:{type:'string'}, model:{type:'string'}, 'review-model':{type:'string'}, 'dry-run':{type:'boolean'}, workshop:{type:'boolean'}, 'report-only':{type:'boolean'}, help:{type:'boolean'} } });
@@ -53,7 +53,7 @@ async function main() {
   await writeFile(`${output}.details.jsonl`,'',{flag:'wx'});
   const results = [], columns = values.workshop ? JUDGE_COLUMNS : [...new Set([...headers,...Object.keys(rows[0] || {}),...Object.keys(blankResult(''))])];
   const persist = async () => {
-    await writeFile(output,stringify(values.workshop ? results.map(judgeResult) : results,{header:true,columns,escape_formulas:true}));
+    await writeFile(output,stringify(values.workshop ? results.flatMap(judgeResult) : results,{header:true,columns,escape_formulas:true}));
     await writeFile(`${output}.details.jsonl`,results.map(r=>JSON.stringify(r)).join('\n')+'\n');
   };
   for (const row of rows) {

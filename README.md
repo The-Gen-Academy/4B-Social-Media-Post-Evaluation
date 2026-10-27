@@ -1,114 +1,87 @@
-# 4B: Social Media Post Evaluation
+# Social Media Post Evaluation
 
-Review actual AI-generated posts, explain what works or fails, improve the generator,
-and check whether the change helped. Give each post **one PASS or FAIL**, supported
-by a written critique. This exercise follows [Hamel Husain's approach](https://hamel.dev/blog/posts/llm-judge/).
+Generate **10 new posts** in n8n. Review every post across five dimensions, improve the generation prompt, and check whether the change helps.
+
+**All five dimensions must PASS for the post to PASS. If any dimension FAILS, the whole post FAILS.** There are no numerical scores or averages.
 
 ## Start here
 
-- [Assignment handout](https://docs.google.com/document/d/1tGiUY_TwSEagGAc0sL96trBsf2RK04OVu9VI_rTx7pA/edit)
-- [Google workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit#gid=1455183772)
-- [Excel workbook](Social%20Media%20Post%20Evaluation.xlsx)
-- [Walkthrough](docs/walkthrough.md)
+- Make one copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit). An [Excel copy](Social%20Media%20Post%20Evaluation.xlsx) is also included.
+- Download the [10-request CSV](examples/10-post-requests.csv) and [generation workflow](Social%20Media%20Post%20Generation%20Workflow.json).
+- Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenRouter API key. The optional Jev exercise uses a separate TypeSafe API key.
 
-## The six-column Evaluation Log
+The ten requests include fictional approved facts so you can run the exercise immediately. You may adapt them before generating. The 12 older posts and their feedback are preserved in **Existing Examples** as reference material. They do not count toward your ten new posts.
 
-| Column | What to put here |
-| --- | --- |
-| Test_ID | A unique case ID. Keep it the same when testing a revised generator. |
-| User_Input | The brief, audience, constraints and approved source facts, all in one cell. |
-| Model_Output | The exact generated post. |
-| Human_Feedback | Your critique: specific evidence and why it matters. |
-| Status | One overall PASS or FAIL. Leave blank until reviewed. |
-| Failure_Category | The main problem in a failed post. Leave blank for PASS. |
+## Part 1: Generate 10 posts and evaluate each dimension
 
-There are no dimension scores, totals, reviewer names or run metadata columns.
-The original 12 posts and feedback are retained. Review that earlier feedback
-against your current brief before assigning PASS or FAIL.
+1. Import the generation workflow into n8n and connect your credential to **Generate Post**.
+2. Upload the supplied 10-request CSV and run the workflow. Save the ten generated posts in **Evaluation Log**. Save the prompt and n8n run too.
+3. Read each request, its approved facts and the resulting post. Choose **PASS or FAIL for each of the five dimensions** in the workbook. Review all five, even after finding a failure.
+4. Write a short explanation for each failed dimension. Point to the actual claim, missing content or wording. The workbook calculates the overall result automatically.
 
-The other tabs have narrow purposes:
+### Five PASS/FAIL dimensions
 
-| Tab | Use |
-| --- | --- |
-| Failure Analysis | Category, Count and Suggested_Fix. Counts come from FAIL rows in Evaluation Log. |
-| Failure Traces | Test_ID, Evidence, Likely_Cause and Proposed_Fix for selected failures. |
-| Judge | Optional automated results, kept separate from your human review. |
+| Dimension | PASS when | FAIL when |
+| --- | --- | --- |
+| Factual Correctness | Concrete claims agree with the approved facts. | A claim is invented, unsupported or contradicts the facts. |
+| Clarity | The main point is easy to understand; the writing is coherent and concise. | Confusing wording, repetition or structure obscures the main point. |
+| Value / Insight | The post delivers the requested information, example, resource or useful takeaway. | It is generic filler, omits requested substance or promises content that is not supplied. |
+| Engagement | The opening gives a reason to read and the ending offers a relevant action or question. | The opening has no clear appeal, or the ending lacks a relevant action or question. |
+| Tone Fit | The language is professional, accessible and suitable for the audience and requested voice. | It is inappropriate, unnecessarily difficult, condescending or inconsistent with the requested voice. |
 
-## Complete the exercise
+If the request explicitly prohibits a call to action or question, a useful closing takeaway is sufficient for Engagement. Missing an explicit word limit, format or required link fails Value / Insight. Optional stylistic preferences alone do not cause a failure. The **Rubric** tab contains the full definitions.
 
-1. Prepare 30 development briefs. Put the request, audience and constraints in
-   User_Input. End the cell with **Approved facts:** followed by actual source
-   text and its source. If no external facts are needed, say so explicitly.
-2. Generate the posts. Review five, clarify what success means, then review all
-   30. Write Human_Feedback before setting Status.
-3. Group failures in Failure_Category. Use Failure Analysis and a few execution
-   traces to choose one focused change.
-4. Save the baseline workbook. Make a separate revised copy, keep the same
-   Test_IDs and briefs, clear Model_Output and review fields, and generate again.
-   Compare the human judgments: FAIL→PASS, PASS→FAIL, PASS→PASS and FAIL→FAIL.
-5. Freeze the change. Compare baseline and revised generators on 10 reserved
-   briefs that did not influence the change. Keep these results in separate
-   workbook copies and report them separately.
+**Worked example:** The approved facts say a workshop is free, online, 60 minutes long and offers no certificate. A clear, useful and engaging post promises a certificate. Mark Factual Correctness **FAIL**. The other four dimensions may PASS, but the overall result is **FAIL**. Four passes cannot cancel one failure.
 
-Save prompts, model settings and n8n executions with each workbook copy. Students
-do not need to repeat this information on every row. The workbook supports 500
-posts and 20 failure categories; extend the Count formulas for more categories.
+If the source facts or request are missing, leave the affected dimension unfinished and explain what is needed. A post with unfinished reviews shows **PENDING**, unless another dimension already fails. Complete all five reviews before moving on.
 
-## Run in n8n
+## Part 2: Group the failures
 
-Import the workflow for your stage:
+Give each failed post one main failure category: Incorrect or Hallucinated Content, Low Informational Value, Instruction Non-Compliance, or Poor Framing. Use **Failure Analysis** to see the counts and note a proposed fix.
 
-- [Generate posts](Social%20Media%20Post%20Generation%20Workflow.json)
-- [Judge existing posts](Social%20Media%20Jev%20Judge%20Only.json)
-- [Generate and judge](Social%20Media%20Post%20Generation%20with%20Jev%20Judge.json)
+For a few failures, inspect the n8n execution. Did the relevant facts and instructions actually reach the model? Record the evidence, likely cause and proposed fix in **Failure Traces**. Choose one recurring or high-impact problem.
 
-Attach OpenRouter Header Auth to each HTTP node: header name Authorization,
-value Bearer followed by your API key. Exports contain no credentials.
-Upload a CSV exported from the six-column Evaluation Log.
+## Part 3: Improve the generation prompt
 
-**Generation** downloads six columns for Evaluation Log A:F.
-**Judge-only** downloads seven columns for Judge A:G.
-The combined workflow has separate downloads for posts and judge results.
-Review the posts yourself before opening automated results.
+Save the original prompt. Change one instruction in **Prepare Generation** to address the problem you observed. For example, clarify which facts may be used, require a missing practical example, or demonstrate the desired tone with a short example. Keep the five evaluation rules fixed.
 
-A populated Model_Output is preserved. Clear it in a new workbook copy to
-generate a fresh post. New posts clear the earlier human labels. Missing source
-facts and API errors leave decisions blank, with an explanation in feedback or
-the judge's Run_Status/Review_Notes. No workflow publishes posts.
+Record what you changed and why you expect it to help. Improve the workflow rather than editing the generated posts by hand.
 
-## Optional judge exercise
+## Part 4: Rerun and compare
 
-Freeze 30 reviewed baseline cases into separate TRAIN (6), DEV (12) and TEST (12)
-files/workbook copies. Keep related inputs together. Only TRAIN examples enter
-the prompt. Use DEV to improve the judge, then freeze it before TEST.
+1. Run the revised generator on the requests whose posts failed, plus at least one whose post passed. Keep the original requests and facts unchanged.
+2. Save the new outputs in **Revised Posts** and review all five dimensions again. Keep the original posts and reviews in Evaluation Log.
+3. Open **Comparison**. It matches the request IDs and shows whether each result was fixed, got worse, still passes or still fails. You do not need to fill comparison labels manually.
 
-Judge has seven columns: Test_ID, Human_Status, Jev_Status, LLM_Critique,
-LLM_Status, Run_Status and Review_Notes. Jev makes a binary decision. A separate
-LLM supplies its own critique and decision; the critique does not explain Jev's
-reasoning. Compare **Human_Status with Jev_Status**. Investigate disagreements
-in Review_Notes, without changing human labels just to agree with the model.
+Report the original and revised PASS counts for the same requests you reran. Note which dimension improved and whether any previously passing dimension now fails. If the first ten posts all pass or all fail, add a clearly labeled extra request to obtain the missing comparison type and report the extra case separately.
 
-Report the four human/judge confusion counts, false-pass and false-fail rates,
-coverage and execution errors. False-pass rate divides by compared human FAIL
-cases; false-fail rate divides by compared human PASS cases. A missing class is
-not estimable. A small classroom test does not establish production reliability.
+## Part 5: Try automated judges (optional)
 
-## CLI and implementation
+Complete your human reviews first. Then upload those same ten saved posts to [Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json). This workflow evaluates existing posts; it does not generate new ones.
 
-~~~bash
-npm ci
-cp .env.example .env
-# Set OPENROUTER_API_KEY in your editor.
-npm run judge -- --input examples/posts.csv --output results/demo.csv --workshop
-npm run judge -- --input results/demo.csv --report-only
-npm run judge -- --input examples/posts.csv --output results/preview.csv --dry-run
-~~~
+Both judges receive the request, approved facts, post and the same five definitions. **Neither sees your human labels or the other judge's answers.**
 
-The workshop export matches the seven-column Judge tab. A companion
-.details.jsonl file preserves source packets, human critiques and model details;
-.summary.json holds the measured counts. Keep these files beside the CSV.
-Omit --workshop for an advanced CSV with execution details.
+- **Jev** receives five Choice questions, one per dimension, with PASS and FAIL as the options. It returns a choice, probabilities and confidence for each. There is no conversion to a numerical score.
+- **The independent LLM judge** returns PASS or FAIL and a short evidence-based reason for each dimension. Its explanation is its own review, not an explanation of Jev's reasoning.
+- **The workflow** calculates each judge's overall result using the same rule: five PASS decisions are required; any FAIL makes the post FAIL. Tied Jev decisions and failed calls are flagged for review, never counted as passes.
 
-Edit the generator in src/generation.js and the policy/TRAIN examples in
-src/judge.js. Follow [integration details](docs/jev-integration.md), rebuild the
-workflows with npm run build:workflows, and run npm test.
+Connect a **TypeSafe API key** to **Call Jev** and an **OpenRouter API key** to **Independent LLM Review**. The supplied workflow already uses the correct TypeSafe URL and model. Save the downloaded results in **Judge**. Each post has five dimension rows and one overall row, so disagreements are easy to inspect.
+
+Jev is being tested as a fast structured judge. Human labels remain the reference for this exercise; subjective criteria such as value and tone still need inspection.
+
+## Part 6: Improve the judge (optional)
+
+Inspect disagreements dimension by dimension. Check your own review too. If a rule is unclear, clarify that rule in the judge instructions, keep the saved posts unchanged and rerun. The [integration guide](docs/jev-integration.md) shows where the prompts live.
+
+Compare missed failures and rejected good posts before and after the change. Count missing decisions and failed runs separately. Report this as improvement on these practice posts, not proof of performance on unseen posts.
+
+## What to submit
+
+- The ten generated posts, their requests and approved facts, all five human decisions per post, overall results and brief reasons for failures.
+- Failure categories, a few supporting execution traces and the exact generation-prompt change.
+- Original and revised outputs, fresh dimension reviews, comparison results and both saved prompts/runs.
+- If you try the judges: both sets of results, disagreements with human reviews and any instruction change you tested.
+
+## For maintainers
+
+`src/rubric.js` holds the shared five-dimension policy. `src/generation.js` holds the generator system prompt. `src/judge.js` builds Jev's questions and the independent LLM prompt. Run `npm ci`, `npm run build:workflows`, then `npm test` after changes. See [validation](docs/validation.md).

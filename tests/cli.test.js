@@ -18,12 +18,12 @@ test('CLI round trip preserves human evidence, reports errors, and exports workb
   const details=(await readFile(output+'.details.jsonl','utf8')).trim().split('\n').map(line=>JSON.parse(line));
   assert.equal(details[0].Human_Critique,row.Human_Critique);
   assert.deepEqual(details.map(r=>r.Jev_Run_Status),['OK','OK','ERROR','SKIPPED','NEEDS_CONTEXT']);
-  assert.equal(result[1].Jev_Status,'FAIL');assert.equal(result[1].LLM_Status,'PASS');
-  assert.equal(result[2].Jev_Status,'');assert.equal(result[2].LLM_Critique,'');
+  assert.equal(result[6].Jev_Status,'FAIL');assert.equal(result[6].LLM_Status,'PASS');
+  assert.equal(result[12].Jev_Status,'');assert.equal(result[12].LLM_Reason,'');
   assert.equal(run(['--input',input,'--output',output]).status,1);
   assert.equal(run(['--input',output,'--report-only']).status,0);
 });
-test('six-column learner CSV runs without metadata columns and exports separate judge results',async()=>{
+test('dimension-based learner CSV runs without metadata columns and exports separate judge results',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'simple-eval-')),input=join(dir,'in.csv'),output=join(dir,'judge.csv');
   await writeFile(input,stringify([workshopResult(row)],{header:true}));
   const p=run(['--input',input,'--output',output,'--workshop']);assert.equal(p.status,0,p.stderr);

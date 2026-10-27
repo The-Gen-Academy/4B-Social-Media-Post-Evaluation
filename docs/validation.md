@@ -1,23 +1,14 @@
-# Validation — October 23, 2026
+# Validation: five-dimension PASS/FAIL exercise
 
-- All 21 social-evaluation automated tests passed. These use fabricated API
-  responses and exercise binary validation, class denominators, label isolation,
-  independent review, provider errors, CSV round trips and embedded n8n code.
-- Workbook fixtures verified all four human baseline/revised transitions,
-  changed-brief detection, duplicate IDs, missing critiques, API-error exclusion
-  and both class-specific error denominators. Fixtures were not saved as results.
-- The shared Google Sheet was read back after editing; the inspected summary,
-  comparison and helper cells contained no formula errors. All original 12 posts
-  and their repository instructor critiques were preserved as historical data.
-- All workbook tabs were rendered; the native Sheet was visually inspected.
-  The updated handout was exported and checked as a seven-page PDF.
-- A local n8n execution processed the three constructed demo rows through the
-  judge/review/export path. The saved local OpenRouter credential had expired:
-  both model endpoints returned HTTP 401. Every affected decision stayed blank
-  and the exported statuses were ERROR. This verifies error handling, **not**
-  successful live judgments. A valid OpenRouter credential is needed to verify
-  the live success path. No model agreement or reliability claim is made.
+Validated on 2026-10-27:
 
-Workflow exports contain no credentials. The original and combined generator
-paths were checked with automated fixtures; this revision does not claim a live
-generation or full browser form-upload test with a valid model credential.
+- All three workflow JSON files rebuild from shared source. Their node graphs and embedded Code nodes are checked by executable tests.
+- Mocked API round trips cover generation, independent five-dimension reviews, 60 judge rows for a ten-post run, error handling and CSV exports.
+- Tests verify that each single failed dimension produces an overall FAIL, all five passes produce PASS, and missing/invalid/tied decisions cannot produce PASS.
+- Current human labels, feedback and other model answers are excluded from model inputs. Newly generated posts clear old reviews.
+- The workbook's actual formulas were exercised for every single-dimension failure, all-pass, incomplete review, empty post, all four comparison outcomes and reordered revised IDs. The twelve earlier posts and their feedback were checked for exact preservation.
+- The Google Sheet is updated from the verified workbook. The handout and workflow setup describe the same ten-post exercise.
+
+Automated tests use fabricated provider responses. No fresh paid Jev or LLM evaluation was run for this revision, and no model-quality improvement is claimed from prompt edits alone. Participants measure that with their own ten-post experiment.
+
+Run `npm ci`, `npm run build:workflows` and `npm test` to reproduce the code checks. Rebuilding must leave the checked-in workflow JSON unchanged.
