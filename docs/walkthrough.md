@@ -28,6 +28,8 @@ Run the failed requests and at least one previously passing request, with their 
 5. Select **Execute workflow**, open the test form in **Upload Failure Traces CSV**, and upload the file. The workflow evaluates saved posts; it does not generate anything.
 6. Download `category_judge_results.csv` from **Download Category Results CSV**. Read **Calibration Summary** for exact-match accuracy, both class counts, false alarms, misses, unresolved cases and errors. Keep the results file for this run. No workbook tab needs to be added or replaced.
 
+For local Docker setups, open the test form on the same host port as the n8n editor. If the editor is at `localhost:5679` but the form URL shows `localhost:5678`, change only the port to `5679`. Start Execute workflow before opening the form.
+
 For example, choose **Missing Practical Detail**. A trace assigned that main category has human ground truth TRUE. A trace assigned **Unsupported Claims** has ground truth FALSE. The judge must independently decide whether Missing Practical Detail is the **main** issue. FALSE does not mean the post passes, and a secondary issue does not automatically make the answer TRUE.
 
 OpenAI receives only the selected definition and contrast rule, request, saved post and available approved facts. Human feedback, main category and five dimension decisions stay out of the request. The comparison happens afterward. If evidence is insufficient, the prediction stays blank with Run_Status UNRESOLVED. Failed API calls stay blank with Run_Status ERROR. Neither counts as FALSE or as a correct decision.
