@@ -1,129 +1,44 @@
-# Binary Jev integration
+# How the judges work
 
-## Model responsibilities
+Jev and GPT-4.1-mini independently review the same post against five dimensions: Factual Correctness, Clarity, Value / Insight, Engagement and Tone Fit. Each dimension is PASS or FAIL. Code calculates Overall: any FAIL wins; otherwise all five must PASS. No average, numerical grade or confidence threshold changes this rule.
 
-`src/judge.js` defines one publication policy and one Jev `choice` question:
-`Publication_Decision`, with `PASS` and `FAIL` criteria. The result is accepted
-only when the response envelope, labels, confidence and two probabilities are
-valid and the selected label has the greatest probability. A tie is `AMBIGUOUS`
-with a blank decision. Probability and confidence are diagnostics, not grades or
-measured correctness. There is no numeric publication threshold.
+## Inputs and facts
 
-Jev supports [typed decisions](https://docs.typesafe.ai/api/system-one), including
-the [Choice primitive](https://docs.typesafe.ai/primitives/choice). It does not
-write prose. The independent review uses OpenRouter chat completions and a strict
-[structured-output schema](https://openrouter.ai/docs/guides/features/structured-outputs):
+`src/workshop.js` reads the request and saved post from the CSV. It uses `Reference_Facts` if supplied; otherwise it copies the text after an `Approved facts:` heading in the request. This is text parsing, not an LLM extraction step. Keep that heading last in the request. The provided ten requests already follow this format.
 
-```json
-{"critique":"Evidence and decisive publication requirement.","decision":"PASS"}
+The parser cannot discover or verify facts. A person supplies them. Missing facts block generation/judging with NEEDS_CONTEXT. For a task requiring no external facts, explicitly state that in the approved-facts section. The twelve historical examples do not have this context and are retained as reference material.
+
+## Prompts
+
+- `src/rubric.js`: five PASS/FAIL definitions and shared evaluator policy.
+- `src/generation.js`: role, task, factual boundaries, quality checks and plain-text output contract for the generator.
+- `src/judge.js`: Jev Choice requests and the independent LLM's structured review prompt.
+
+The prompts separate instructions from JSON input data, define observable acceptance criteria, specify output formats and forbid inventing supporting facts. This structure follows the guidance to use clear tasks, roles, constraints and structured context in [Anthropic's prompting guide](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices).
+
+For a generator experiment, edit only `GENERATOR_PROMPT`. For a judge-instruction experiment, edit `POLICY` or clarify a dimension definition, then increment `JUDGE_VERSION`. If the acceptance rules actually change, update the human reviews and `RUBRIC_VERSION` too. Run `npm run build:workflows` and reimport the JSON into n8n. Reattach provider credentials after import.
+
+## Responses
+
+Jev receives one Choice question per dimension with two named options. Its selected choice is used directly. An exact probability tie leaves that dimension undecided. The LLM returns a validated object with a decision and short reason for every dimension. Neither request contains the current human labels, human feedback or the other judge's result.
+
+An invalid or missing dimension response is an API/run error, not a quality failure. A valid FAIL on any dimension makes the overall result FAIL, even if another dimension is tied. If there is no FAIL and a dimension remains undecided, the overall result stays blank for review.
+
+The exported Judge CSV includes one row per dimension and one Overall row. Probabilities and raw responses remain in execution data or CLI detail logs for diagnostics. They do not determine a separate numerical grade.
+
+## Local CLI
+
+```sh
+npm ci
+npm run build:workflows
+npm test
+npm run judge -- --provider typesafe --input reviewed-posts.csv --output results/baseline.csv --workshop
 ```
 
-`decision` must be PASS or FAIL. A refused, truncated, malformed or empty review
-is an error. The reviewer sees the same policy, approved context and TRAIN
-examples as Jev, but no Jev prediction or current human feedback. Its critique
-must be attributed to the independent LLM. Disagreement flags human review and
-never changes Jev's recorded prediction. `Review_Required=false` means the two
-model decisions agreed with valid responses; it does **not** authorize publishing
-or certify accuracy. All course decisions still require human validation.
+Set `TYPESAFE_API_KEY` and `OPENROUTER_API_KEY` in an ignored `.env`. A dry run validates inputs and exports requests without API calls:
 
-## Input and output
+```sh
+npm run judge -- --provider typesafe --input reviewed-posts.csv --output results/preview --dry-run
+```
 
-The [workbook contract](../src/workshop.js) has two small exports:
-Evaluation Log uses Test_ID, User_Input, Model_Output, Human_Feedback, Status and
-Failure_Category. Judge uses Test_ID, Human_Status, Jev_Status, LLM_Critique,
-LLM_Status, Run_Status and Review_Notes. Judge results never overwrite human review.
-
-Put the brief, audience and constraints in User_Input, followed by an
-`Approved facts:` section with the actual source text. The input adapter derives
-the internal context and policy fields. If no external facts are needed, state
-that explicitly under Approved facts:. A missing facts section blocks evaluation;
-the models do not retrieve URLs. A new workbook/CSV copy identifies each experiment.
-Advanced CSVs with separate Reference_Facts and Context_Status remain supported.
-
-Only brief, candidate, facts, constraints, persona and selected TRAIN examples
-enter model requests. Current human labels, critiques, previous judgments,
-failure tags and historical review notes are excluded. Supply source evidence
-independently; a generated post cannot be evidence for its own concrete claims.
-
-The adapter maps Status to the internal Human_Decision, Human_Feedback to
-Human_Critique, and Failure_Category to Failure_Tag. It supplies the internal
-policy version. These implementation fields are not extra workbook columns.
-Review the exact input/output packet, not an earlier version of the post.
-The generator clears those fields whenever it creates a new post and moves the
-previous critique into historical notes. Existing posts are preserved as-is.
-
-Execution statuses remain separate from decisions:
-
-| Status | Meaning |
-| --- | --- |
-| OK | Valid response with one PASS/FAIL decision. |
-| ERROR | Identity, generation, API or response-validation failure. |
-| NEEDS_CONTEXT | Evaluation packet is incomplete. |
-| SKIPPED | No candidate post. |
-| AMBIGUOUS | Jev returned tied probabilities; human review required. |
-| NOT_RUN | No judge/reviewer call has been made. |
-
-Duplicate Test_IDs in a learner CSV are blocked. Advanced inputs are checked by
-Test_ID + Run_ID. Save separate workbook snapshots for generator versions, judge
-versions and dataset splits. There are no helper columns in Evaluation Log.
-
-## Providers and credentials
-
-The n8n imports default to OpenRouter. Attach the same Header Auth credential to
-**Call Jev**, **Independent LLM Review**, and **Generate Post** when present.
-Use `Authorization: Bearer <OpenRouter API key>`. No API key or credential ID is
-included in exported workflows.
-
-| Jev provider | Endpoint | Default model | Environment key |
-| --- | --- | --- | --- |
-| OpenRouter | `https://openrouter.ai/api/v1/systemone` | `typesafe/jev-1.13` | OPENROUTER_API_KEY |
-| TypeSafe | `https://api.typesafe.ai/v1/systemone` | `jev-1.13.0` | TYPESAFE_API_KEY |
-| Vercel AI Gateway | `https://ai-gateway.vercel.sh/typesafe/v1/systemone` | `typesafe-ai/jev-1.13.0` | AI_GATEWAY_API_KEY |
-
-CLI flags `--provider` and `--model` override environment settings. The independent
-review always uses OpenRouter and also requires OPENROUTER_API_KEY. Set
-`REVIEW_MODEL` or `--review-model` for a compatible structured-output model. In n8n,
-changing Jev provider requires changing the endpoint, credential and model together;
-the independent review retains its own OpenRouter credential and endpoint.
-
-The Jev CLI retries transient failures up to three times, with bounded backoff;
-it does not retry authentication failures or disclose response bodies. The review
-CLI makes one attempt. n8n HTTP nodes have a 60-second timeout and up to three
-attempts, five seconds apart. Credential-configuration failures can stop a whole
-n8n execution; fix the credential before rerunning. Each run exports results and
-never publishes posts. The CLI refuses to overwrite output files, persists each
-completed row, and exits nonzero on evaluation errors.
-
-## Calibration without leakage
-
-1. Freeze exact human-labeled baseline posts and their sources.
-2. Assign related cases together to 6 TRAIN, 12 DEV and 12 TEST examples. Include
-   both labels where possible; report actual class counts and any additional cases.
-3. Add only complete human-reviewed TRAIN records to `TRAIN_EXAMPLES` in
-   `src/judge.js`. Each object can use the same six column names as Evaluation Log.
-   User_Input must include Approved facts:, with Human_Feedback and Status filled.
-   The adapter supplies internal metadata. Evaluation cases sharing a TRAIN
-   Test_ID are rejected. The default array is empty until students add examples.
-4. Iterate on DEV disagreements, checking the human label as well as the judge.
-   Increment JUDGE_VERSION for each behavioral change. Do not change posts while
-   measuring a judge improvement. Never put DEV examples into the prompt.
-5. Freeze policy, prompt, examples, model and settings before TEST. Save raw
-   responses and the actual model identifiers. New tuning after looking at TEST
-   needs a new untouched test set.
-
-Use one judge version and split per workbook copy. On Judge, compare Human_Status
-with Jev_Status. Report human FAIL→judge PASS and human PASS→judge FAIL counts with
-their class denominators, plus coverage. Missing context, ties and API failures
-cannot be counted as correct answers. A missing class makes its rate undefined.
-The CLI's .summary.json and .details.jsonl retain metrics and execution evidence
-without putting those fields in the learner's log. Three demo cases and twelve
-test cases are not a reliability study.
-
-## Reproducibility
-
-All three n8n workflows are generated from the shared source files by
-`scripts/build-workflows.js`. Changes to the generator, policy, TRAIN examples
-or CSV contract require rebuilding and reimporting the workflow.
-Automated tests use fabricated responses, clearly separated from any live run.
-The workbook keeps historical posts and instructor feedback but no purported
-current judge results. See the current walkthrough for the runnable demonstration.
+Use a new output filename for each run. The CLI refuses to overwrite prior results. OpenRouter and Gateway remain available as explicit alternate Jev providers for existing users; the workshop n8n files use TypeSafe directly.

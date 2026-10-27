@@ -1,0 +1,41 @@
+Test_ID,User_Input,Model_Output
+P01,"Write a LinkedIn invitation for beginners to an AI-at-work workshop. Mention price, format and duration. Use at most 80 words and end with a question.
+
+Approved facts:
+Fictional workshop for this exercise: free, online and 60 minutes long. No certificate is offered.",
+P02,"Write a LinkedIn post for AI engineers recommending two evaluation resources. Name both resources and explain what each helps with. Use at most 100 words. End by inviting readers to share how they use them.
+
+Approved facts:
+Fictional resources for this exercise: Casebook is a labeled test-case template. Traceboard is a failure-analysis worksheet. Neither has a public download link or accompanying attachment.",
+P03,"Write a LinkedIn announcement for technical team leads about a new evaluation clinic. Mention the topic and session length. Use at most 90 words and a clear call to action.
+
+Approved facts:
+Fictional clinic for this exercise: a 45-minute online session on grouping agent failures. Participants can request details in the comments. No performance study, improvement statistic or testimonial is available.",
+P04,"Write a LinkedIn post for new AI builders explaining one practical way to review a generated answer. Include the three steps below. Use plain language, at most 100 words, and end with a question.
+
+Approved facts:
+Practice method: read the original request, compare the answer with the supplied reference facts, then record PASS or FAIL with one concrete reason. This is a suggested review method, not a proven performance claim.",
+P05,"Write a LinkedIn announcement for analysts about a fictional evaluation tool. Explain its two available features. Use at most 80 words. Invite readers to name the feature they would try first.
+
+Approved facts:
+Fictional tool: EvalPad lets users save test cases and tag failure categories. Automated scoring is planned but not available. No pricing, release date, URL or integrations have been approved.",
+P06,"Write a LinkedIn reminder for enrolled learners about a feedback session. Include the day, time, time zone and what to bring. Use at most 80 words and a clear closing action.
+
+Approved facts:
+Fictional session: Thursday at 5 PM Pacific Time, online. Bring one generated post and the request used to create it. There is no approved calendar date or meeting URL.",
+P07,"Write a LinkedIn post for nontechnical managers explaining PASS/FAIL review. Include one example of a failure. Avoid jargon, use at most 100 words and end with a question.
+
+Approved facts:
+In this exercise, a post passes only when every review dimension passes. A post that promises a certificate fails factual correctness when the approved facts say no certificate is offered.",
+P08,"Write a LinkedIn post for developers sharing the two-item checklist below. Put the checklist in the post itself. Use at most 90 words and close with a useful takeaway. Do not include a call to action or a question.
+
+Approved facts:
+Checklist: verify claims against the supplied facts; check the requested output format. No infographic, attachment, external resource or link accompanies this post.",
+P09,"Write a LinkedIn update for a technical audience about a small classroom experiment. State the two results and their limited scope. Use at most 100 words and end with a relevant question.
+
+Approved facts:
+Fictional classroom results: 6 of 10 original posts passed all review dimensions; after a prompt change, 8 of the same 10 requests produced passing posts. No new requests were tested. These observations do not establish performance on new cases.",
+P10,"Write a LinkedIn invitation for experienced engineers to an error-analysis session. Give the agenda as three short bullets. Use at most 100 words and close by inviting readers to suggest a failure to discuss.
+
+Approved facts:
+Fictional agenda: inspect one failed output; check the model input and prompt; propose one targeted change. The session is online. No date, price, duration, certificate or registration link has been approved.",

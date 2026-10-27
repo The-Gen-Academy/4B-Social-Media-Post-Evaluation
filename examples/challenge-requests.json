@@ -1,0 +1,62 @@
+[
+  {
+    "Test_ID": "R01",
+    "Focus": "Routine invitation",
+    "User_Input": "Write a LinkedIn invitation for first-time AI builders to our evaluation clinic. Include the audience, price, duration, delivery mode and registration link. Keep it within 80 words and end with a specific invitation to register.\n\nApproved facts:\nThis is a fictional workshop for the exercise. Name: Evaluation Clinic. Audience: first-time AI builders. Free, online, 45 minutes. Registration URL: https://example.org/eval-clinic. No certificate is offered. The date has not been announced.",
+    "Review_Check": "Includes free, online, 45 minutes and the exact supplied link. No invented date or certificate. At most 80 words; a relevant registration CTA."
+  },
+  {
+    "Test_ID": "R02",
+    "Focus": "Routine practical guidance",
+    "User_Input": "Write a LinkedIn post for a small team reviewing its first AI-generated announcement. Give exactly three numbered review steps and one short hypothetical example of a factual error. Keep it within 110 words. End with a specific question about the reader's review process.\n\nApproved facts:\nFor this fictional exercise, the review method is: read the request, compare the answer with supplied facts, then record PASS or FAIL with a concrete reason. The example workshop is free and offers no certificate. You may construct a clearly hypothetical bad sentence to illustrate the certificate error. No measured productivity or accuracy benefits are established.",
+    "Review_Check": "Three numbered steps, a recognizable hypothetical certificate error, and a specific process question. No invented measured benefit. At most 110 words."
+  },
+  {
+    "Test_ID": "R03",
+    "Focus": "Missing information",
+    "User_Input": "Write an exciting but accurate LinkedIn teaser for an upcoming AI evaluation workshop. Make clear that the date and registration details are still to be announced. Mention the available practical details. Do not include a placeholder link or tell readers to register yet. End by asking which evaluation problem they want covered. Keep it within 80 words.\n\nApproved facts:\nFictional workshop: Debug Your AI. It is free, online and 60 minutes long. The date and registration URL have not been decided. No testimonials, enrollment counts or certification claims are available. The workshop will cover grouping failures and improving a prompt.",
+    "Review_Check": "States that date and registration details are pending. Includes the known practical details and topics. No fabricated URL, date, testimonial or registration CTA. Specific closing question."
+  },
+  {
+    "Test_ID": "R04",
+    "Focus": "Deliver the promised substance",
+    "User_Input": "Write an AI post-review cheat sheet as the LinkedIn post itself, not a promotion for a future cheat sheet. Include three checks. For each check, give one concrete hypothetical bad phrase and what the reviewer should check. Name the two supplied resources and explain what each is for. Do not claim there is an attachment. Keep it within 160 words and end with a specific question about one of the checks.\n\nApproved facts:\nFictional resources: Claim Ledger lists approved claims; Brief Checklist lists requested content and format. Neither has a public download link. Suggested checks: unsupported claims, missing requested content, and a closing action that cannot be completed. You may invent clearly hypothetical phrases for teaching, but no real customer quotes or product results.",
+    "Review_Check": "Three distinct checks, each with a bad phrase and concrete review action. Both resources have a stated use. No fictitious attachment or download. The post contains the cheat sheet, within 160 words."
+  },
+  {
+    "Test_ID": "R05",
+    "Focus": "Mixed results and statistics",
+    "User_Input": "Write a positive but balanced LinkedIn update for engineering managers about our prompt revision. Report both test groups separately, the change in the practice pass rate in percentage points, and the latency tradeoff. Explain what we still cannot conclude. Do not call the system production-ready. Keep it within 130 words and end with a question about the next test.\n\nApproved facts:\nFictional experiment. On the same 10 practice requests, the original prompt passed 8 and the revised prompt passed 9. On a separate set of 10 previously unseen requests, both prompts passed 6. Mean response time rose from 2 seconds to 3 seconds. No larger or repeated evaluation has been run. The data does not establish general reliability or a causal business benefit.",
+    "Review_Check": "Practice 8/10 to 9/10 is +10 percentage points, not +10% relative. Unseen cases remain 6/10. Latency rises 2s to 3s. No pooled rate that hides the groups, general reliability claim or production-ready claim."
+  },
+  {
+    "Test_ID": "R06",
+    "Focus": "Available versus planned features",
+    "User_Input": "Write a LinkedIn product update for support-team leads. Explain what CaseShelf can do today and one important limitation. Mention automatic scoring only as planned, with no release promise. Include a concrete use case for the current features. Keep it within 100 words and end with a question about the reader's review workflow.\n\nApproved facts:\nCaseShelf is a fictional tool. Available today: save test cases, add manual failure tags, export CSV. Reviewers still assign labels themselves. Automatic scoring is planned and has no announced release date. No integrations, customer counts, time savings or accuracy claims are verified. A hypothetical use case may combine the available features.",
+    "Review_Check": "All current features remain distinct from planned automatic scoring. Explicitly notes manual labeling. The use case uses only current capabilities. No invented launch timing or quantified benefit."
+  },
+  {
+    "Test_ID": "R07",
+    "Focus": "Updated source among older notes",
+    "User_Input": "Write a LinkedIn invitation for busy product managers using the current organizer notice, which supersedes the older draft below. Include the current duration, delivery mode, preparation requirement and registration link. Keep it within 90 words. Finish with a clear registration action. Do not repeat superseded details.\n\nApproved facts:\nThis is a fictional event. CURRENT ORGANIZER NOTICE, revision 2: Prompt Review Lab is free, online and 50 minutes long. Participants should bring one saved AI response and its original request. Registration: https://example.org/prompt-review. There is no certificate. The date has not been announced.\nOLDER DRAFT, revision 1, superseded: paid, in person, 30 minutes, certificate included; bring a laptop. These older details are not current.\nBackground: the session covers inspection of model inputs, outputs and missing context. The team is considering a separate advanced session, but nothing is scheduled.",
+    "Review_Check": "Uses free, online, 50 minutes, saved response plus request, and the exact current URL. No old paid/in-person/30-minute/certificate details or implied scheduled advanced session."
+  },
+  {
+    "Test_ID": "R08",
+    "Focus": "Explain to a beginner",
+    "User_Input": "Write a LinkedIn explanation for a small-business owner with no AI background. Explain the difference between evaluation before launch and monitoring after launch. Use one concrete example for each, and explain any technical term you need. Avoid unexplained acronyms. Keep it within 110 words and end with a specific question the owner could answer.\n\nApproved facts:\nIn this exercise, evaluation means checking saved examples against defined rules before a release. Monitoring means watching real usage after release for errors or changes. Hypothetical business: a shop whose assistant answers return-policy questions. Its policy allows returns within 14 days with a receipt. A correct saved answer can be checked before launch; wrong policy answers in live use can be flagged after launch. Neither activity guarantees that every answer will be correct.",
+    "Review_Check": "Distinguishes before-release checks from after-release monitoring, with a concrete shop example for each. No undefined acronyms or claim that either guarantees correctness. At most 110 words."
+  },
+  {
+    "Test_ID": "R09",
+    "Focus": "Tone under an uncomfortable update",
+    "User_Input": "Write a LinkedIn service update for customers who could not export their reports. Acknowledge the inconvenience, state what happened and what is fixed, and direct readers to the supplied support address if exports still fail. Use a calm, accountable tone. No jokes, emojis, celebratory language or sales pitch. Do not speculate about the cause or promise it will never happen again. Keep it within 90 words.\n\nApproved facts:\nFictional service: ReportNest. CSV exports were unavailable from 09:00 to 09:40 UTC today. Export service is restored. Existing saved reports were not lost. The cause is still under investigation. Support address: support@example.org. No credits or compensation have been announced.",
+    "Review_Check": "Acknowledges disruption, preserves the 40-minute window and restored status, and uses the exact support address. No invented cause, compensation or guarantee. Tone does not minimize the inconvenience or celebrate the incident."
+  },
+  {
+    "Test_ID": "R10",
+    "Focus": "Format and closing constraints",
+    "User_Input": "Write a concise LinkedIn note for team leads about reviewing an AI-generated event invitation. Use one opening sentence, exactly two bullet points, and one closing sentence. Include one bullet about factual claims and one about requested details. Do not include a question or call to action anywhere, including imperatives such as 'Check', 'Review' or 'Try'. End with a declarative takeaway. Keep the whole post within 75 words.\n\nApproved facts:\nFor this fictional review, factual claims must match the supplied event facts. Requested details must match the original brief. A post is ready only when both checks pass. Fluent wording alone does not establish that a post is ready. No empirical performance claims are available.",
+    "Review_Check": "One opening, exactly two bullets and one declarative closing; at most 75 words. Covers both checks without imperatives, questions or unsupported performance claims. A closing like 'Review both' fails under rubric v4."
+  }
+]

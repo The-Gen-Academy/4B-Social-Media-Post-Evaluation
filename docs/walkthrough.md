@@ -1,100 +1,56 @@
-# Project walkthrough
+# Run the 10-post exercise in n8n
 
-## 1. Prepare one case
+## Generate and review
 
-Start in Evaluation Log. Use one row per Test_ID. User_Input contains the whole
-brief, including source facts, so you do not need separate context columns:
+This restores the earliest OpenAI generation workflow from commit `5ce7666`. It is supplied inactive, without account credential references. Both model calls go directly to OpenAI.
 
-~~~text
-Write a LinkedIn post for beginning AI engineers.
-Explain one practical retrieval test, then ask a relevant question.
-Use at most 80 words.
+The workbook has three tabs: **Evaluation Log**, **Failure Analysis** and **Failure Traces**. The twelve worked reviews are already in Evaluation Log; failed examples are also in Failure Traces. Keep them as reference examples. Your ten new posts are separate.
 
-Approved facts:
-Retrieval selects source passages for an answer. Irrelevant passages can leave
-an answer unsupported. No benchmark result or improvement percentage is supplied.
-Source: instructor-approved facts for this teaching example.
-~~~
+1. Import `Social Media Post Generation Workflow.json` into n8n. Create an **OpenAI API credential** and select it in both **OpenAI Chat Model** (creator) and **OpenAI Chat Model1** (critic). The original models are `gpt-5.5-pro` and `gpt-5-mini`, respectively; select an available OpenAI model in each node if necessary. Keep keys in credentials.
+2. Invent ten LinkedIn requests with unique post IDs. Include the audience, purpose, requirements and an `Approved facts:` section at the end. Use verified facts or fictional facts you supply. Prepare a CSV with exact headers `Test_ID`, `User_Input`, `Model_Output`, only these ten requests, and blank `Model_Output` cells. The creator reads `User_Input` directly, so keep that header exactly.
+3. Select **Execute workflow**, open the test form in **Upload Excel Form**, and upload the CSV. Download `linkedin_posts_output.csv` from **Convert to Excel** (despite its name, this node exports CSV) when all ten posts are ready.
+4. Add the post IDs, original requests and outputs beneath the worked examples in **Evaluation Log**. Keep the review fields and overall formulas. Save the generation prompt and execution.
+5. Review Factual Correctness, Clarity, Value, Engagement and Tone for every post. Mark each PASS or FAIL and explain failed dimensions in your own feedback. Any FAIL makes the post FAIL; all five must PASS for an overall PASS.
+6. Update **Failure Analysis** and assign one main category to every failed post. Add a clearly defined category when the existing categories do not fit. Add every failed post, its review and matching main category to **Failure Traces**. Existing category counts include worked examples; report your ten new posts separately.
 
-The exact **Approved facts:** heading lets the workflow find the evidence.
-Put audience and constraints before it. Add actual excerpts, not just URLs.
-If the task needs no external factual claims, state that under the heading.
+The original workflow sends each blank post through **LinkedIn Creator Agent1**, **LinkedIn Critic Agent1**, and **Check Critic Feedback1**. The failure branch returns feedback and the previous post through **Prepare Revision Context**; the other branch collects output and merges it into the uploaded rows. Existing nonblank `Model_Output` rows are preserved. Approved facts belong in each request; this historical workflow does not separately validate their presence.
 
-## 2. Generate and review
+Check that all ten output rows contain a post before reviewing them. If a node fails or an output is blank, inspect the n8n execution and rerun the affected requests. The critic's PASS/FAIL and 0–100 quality score are generation feedback; complete the five human PASS/FAIL decisions yourself. A request may produce a good post; do not change the grading rules merely to create a failure.
 
-Import Social Media Post Generation Workflow.json into n8n. Attach OpenRouter
-Header Auth to Generate Post. Export Evaluation Log as CSV and upload it through
-Upload Posts CSV. Download the output from Download Results CSV and paste its
-six data columns into Evaluation Log A:F.
+## Revise
 
-Read the post, write Human_Feedback, then select PASS or FAIL in Status.
-Do this yourself before viewing any automated opinion.
+Save the baseline workflow. In **LinkedIn Creator Agent1 → Options → System Message**, find the generation instructions and change one instruction to address an observed problem. Keep the original requests, facts and evaluation rules fixed.
 
-| Post | Status | Critique |
-| --- | --- | --- |
-| Gives a practical retrieval inspection step and a relevant closing question. | PASS | Delivers the requested test within the length limit; claims match the source facts. |
-| Claims retrieval improves accuracy by 40%. | FAIL | The source contains no benchmark supporting 40%; remove or substantiate the claim. |
-| Says retrieval matters but gives no test. | FAIL | Omits the practical inspection step requested in the brief. |
+Run the failed requests and at least one previously passing request, with their post text cleared in the input CSV. Add revised outputs as new rows in **Evaluation Log**, using new IDs and noting which originals they revise. Review all five dimensions again. Compare original and revised decisions, add revised failures to **Failure Traces** and update **Failure Analysis**. Use the same three tabs; no comparison tab is needed. Preserve every original output and review.
 
-These are teaching illustrations, not measured model results.
-If facts are missing, leave Status blank and explain what is needed in feedback.
-If a generation call fails, the row remains present with blank output/status and
-a Generation issue message. Inspect the n8n execution and retry after fixing it.
+## Optional: judge one main failure category with OpenAI
 
-## 3. Find a failure pattern
+1. Download and import [Social Media LLM Category Judge.json](../Social%20Media%20LLM%20Category%20Judge.json).
+2. Open **Ask OpenAI** and attach an **OpenAI API credential**. Use your OpenAI API key in the credential, not in a Code node or CSV. The endpoint and `gpt-5.4-mini` model are already configured.
+3. Open **Choose Failure Category**. At the top, set `category`, `definition` and `contrast_rule`. Use the exact name from Failure Analysis, including spelling and capitalization. Start with a supplied definition or write your own for a new category.
+4. Export **Failure Traces** as CSV. Each failed trace needs a saved request, post and human-assigned main category. Include the selected category and other categories, so the exercise has both TRUE and FALSE examples.
+5. Select **Execute workflow**, open the test form in **Upload Failure Traces CSV**, and upload the file. The workflow evaluates saved posts; it does not generate anything.
+6. Download `category_judge_results.csv` from **Download Category Results CSV**. Read **Calibration Summary** for exact-match accuracy, both class counts, false alarms, misses, unresolved cases and errors. Keep the results file for this run. No workbook tab needs to be added or replaced.
 
-Give each FAIL one Failure_Category. In Failure Analysis, enter the same
-category text; Count updates automatically. Add a Suggested_Fix.
-Use Failure Traces for selected cases: quote the Evidence, inspect the n8n
-execution, distinguish a Likely_Cause from observation, and record a Proposed_Fix.
+For local Docker setups, open the test form on the same host port as the n8n editor. If the editor is at `localhost:5679` but the form URL shows `localhost:5678`, change only the port to `5679`. Start Execute workflow before opening the form.
 
-The workbook retains earlier instructor feedback on the original posts.
-Re-review it under the current brief; it is not an automatically approved label.
+For example, choose **Low Informational Value**. A trace assigned that main category has human ground truth TRUE. A trace assigned **Incorrect or Hallucinated Content** has ground truth FALSE. The judge must independently decide whether Low Informational Value is the **main** issue. FALSE does not mean the post passes, and a secondary issue does not automatically make the answer TRUE.
 
-## 4. Compare a change
+OpenAI receives only the selected definition and contrast rule, request, saved post and available approved facts. Human feedback, main category and five dimension decisions stay out of the request. The comparison happens afterward. If evidence is insufficient, the prediction stays blank with Run_Status UNRESOLVED. Failed API calls stay blank with Run_Status ERROR. Neither counts as FALSE or as a correct decision.
 
-Keep the baseline workbook. Make a revised copy, retain Test_ID and User_Input,
-and clear Model_Output, Human_Feedback, Status and Failure_Category before
-generating again. Review the new posts afresh.
+Read every disagreement. Clarify the category definition or the boundary with another category, then rerun the same traces. Preserve the previous CSV so you can compare results. Accuracy is matches divided by completed TRUE/FALSE calls; always report the total, unresolved count and errors too. These are calibration examples, so improvement does not establish accuracy on new traces.
 
-Match Test_IDs between copies. Count fixes (FAIL→PASS), regressions (PASS→FAIL)
-and the two unchanged outcomes. Save the prompt/settings and workflow execution
-with each copy. Use separate copies for the 10 reserved cases and report those
-results separately from the 30 development cases. Do not mix multiple versions
-of the same post into one Evaluation Log.
+### Optional command-line version
 
-## 5. Optional: run and calibrate a judge
+Set `OPENAI_API_KEY` in the ignored local `.env`, then run:
 
-Complete your human review first. Save frozen TRAIN, DEV and TEST workbook/CSV
-copies. Import Social Media Jev Judge Only.json; attach OpenRouter Header Auth
-to Call Jev and Independent LLM Review.
+```sh
+npm ci
+npm run judge:category -- --input failure-traces.csv --category "Low Informational Value" --output results/category-v1.csv
+```
 
-Upload the six-column Evaluation Log CSV. Download judge_results.csv from
-Download Results CSV. Paste its seven data columns into the **Judge** tab A:G:
+Use `--definition "Your rule"` and `--contrast "How to distinguish similar issues"` to change the prompt. Use `--dry-run` to inspect requests without API calls. Each output filename must be new. The CLI writes the results CSV and a `.summary.json` file.
 
-| Column | Meaning |
-| --- | --- |
-| Test_ID | Links to the exact post in this workbook's Evaluation Log. |
-| Human_Status | Your reference PASS/FAIL from the evaluated file. |
-| Jev_Status | Jev's PASS/FAIL prediction. |
-| LLM_Critique | A separate LLM's evidence-based critique. |
-| LLM_Status | That separate LLM's PASS/FAIL opinion. |
-| Run_Status | Whether each model completed, failed or lacked context. |
-| Review_Notes | Execution issues and your investigation of disagreements. |
+### Older Jev experiment
 
-Do not paste these results over the human review. Jev cannot write prose:
-LLM_Critique is an independent opinion, not an explanation of Jev's decision.
-Review errors and blank decisions; do not count them as PASS or quality FAIL.
-
-Compare Human_Status with Jev_Status. Use DEV disagreements to revise the judge
-and only TRAIN cases as prompt examples. Freeze it, then evaluate TEST once.
-Save a new workbook copy for each judge version. Record counts, false-pass and
-false-fail rates, and valid decisions / attempted cases in your submission.
-
-The combined workflow also has Download Posts CSV (six columns) and
-Download Results CSV (seven judge columns). Review posts before opening judge
-results. Generation-only followed by judge-only is the simplest learning path.
-
-For a runnable illustration, examples/posts.csv contains three constructed
-cases with approved facts and human critiques. Keep them separate from measured
-student results. See jev-integration.md for TRAIN formatting and CLI details.
+`Social Media Jev Judge Only.json` and `Social Media Post Generation with Jev Judge.json` are separate advanced examples. They evaluate all five dimensions with TypeSafe Jev and an independent LLM through OpenRouter. They are not part of the one-category OpenAI exercise. Their provider setup is in [jev-integration.md](jev-integration.md).

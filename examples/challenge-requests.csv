@@ -1,0 +1,43 @@
+Test_ID,User_Input,Model_Output
+R01,"Write a LinkedIn invitation for first-time AI builders to our evaluation clinic. Include the audience, price, duration, delivery mode and registration link. Keep it within 80 words and end with a specific invitation to register.
+
+Approved facts:
+This is a fictional workshop for the exercise. Name: Evaluation Clinic. Audience: first-time AI builders. Free, online, 45 minutes. Registration URL: https://example.org/eval-clinic. No certificate is offered. The date has not been announced.",
+R02,"Write a LinkedIn post for a small team reviewing its first AI-generated announcement. Give exactly three numbered review steps and one short hypothetical example of a factual error. Keep it within 110 words. End with a specific question about the reader's review process.
+
+Approved facts:
+For this fictional exercise, the review method is: read the request, compare the answer with supplied facts, then record PASS or FAIL with a concrete reason. The example workshop is free and offers no certificate. You may construct a clearly hypothetical bad sentence to illustrate the certificate error. No measured productivity or accuracy benefits are established.",
+R03,"Write an exciting but accurate LinkedIn teaser for an upcoming AI evaluation workshop. Make clear that the date and registration details are still to be announced. Mention the available practical details. Do not include a placeholder link or tell readers to register yet. End by asking which evaluation problem they want covered. Keep it within 80 words.
+
+Approved facts:
+Fictional workshop: Debug Your AI. It is free, online and 60 minutes long. The date and registration URL have not been decided. No testimonials, enrollment counts or certification claims are available. The workshop will cover grouping failures and improving a prompt.",
+R04,"Write an AI post-review cheat sheet as the LinkedIn post itself, not a promotion for a future cheat sheet. Include three checks. For each check, give one concrete hypothetical bad phrase and what the reviewer should check. Name the two supplied resources and explain what each is for. Do not claim there is an attachment. Keep it within 160 words and end with a specific question about one of the checks.
+
+Approved facts:
+Fictional resources: Claim Ledger lists approved claims; Brief Checklist lists requested content and format. Neither has a public download link. Suggested checks: unsupported claims, missing requested content, and a closing action that cannot be completed. You may invent clearly hypothetical phrases for teaching, but no real customer quotes or product results.",
+R05,"Write a positive but balanced LinkedIn update for engineering managers about our prompt revision. Report both test groups separately, the change in the practice pass rate in percentage points, and the latency tradeoff. Explain what we still cannot conclude. Do not call the system production-ready. Keep it within 130 words and end with a question about the next test.
+
+Approved facts:
+Fictional experiment. On the same 10 practice requests, the original prompt passed 8 and the revised prompt passed 9. On a separate set of 10 previously unseen requests, both prompts passed 6. Mean response time rose from 2 seconds to 3 seconds. No larger or repeated evaluation has been run. The data does not establish general reliability or a causal business benefit.",
+R06,"Write a LinkedIn product update for support-team leads. Explain what CaseShelf can do today and one important limitation. Mention automatic scoring only as planned, with no release promise. Include a concrete use case for the current features. Keep it within 100 words and end with a question about the reader's review workflow.
+
+Approved facts:
+CaseShelf is a fictional tool. Available today: save test cases, add manual failure tags, export CSV. Reviewers still assign labels themselves. Automatic scoring is planned and has no announced release date. No integrations, customer counts, time savings or accuracy claims are verified. A hypothetical use case may combine the available features.",
+R07,"Write a LinkedIn invitation for busy product managers using the current organizer notice, which supersedes the older draft below. Include the current duration, delivery mode, preparation requirement and registration link. Keep it within 90 words. Finish with a clear registration action. Do not repeat superseded details.
+
+Approved facts:
+This is a fictional event. CURRENT ORGANIZER NOTICE, revision 2: Prompt Review Lab is free, online and 50 minutes long. Participants should bring one saved AI response and its original request. Registration: https://example.org/prompt-review. There is no certificate. The date has not been announced.
+OLDER DRAFT, revision 1, superseded: paid, in person, 30 minutes, certificate included; bring a laptop. These older details are not current.
+Background: the session covers inspection of model inputs, outputs and missing context. The team is considering a separate advanced session, but nothing is scheduled.",
+R08,"Write a LinkedIn explanation for a small-business owner with no AI background. Explain the difference between evaluation before launch and monitoring after launch. Use one concrete example for each, and explain any technical term you need. Avoid unexplained acronyms. Keep it within 110 words and end with a specific question the owner could answer.
+
+Approved facts:
+In this exercise, evaluation means checking saved examples against defined rules before a release. Monitoring means watching real usage after release for errors or changes. Hypothetical business: a shop whose assistant answers return-policy questions. Its policy allows returns within 14 days with a receipt. A correct saved answer can be checked before launch; wrong policy answers in live use can be flagged after launch. Neither activity guarantees that every answer will be correct.",
+R09,"Write a LinkedIn service update for customers who could not export their reports. Acknowledge the inconvenience, state what happened and what is fixed, and direct readers to the supplied support address if exports still fail. Use a calm, accountable tone. No jokes, emojis, celebratory language or sales pitch. Do not speculate about the cause or promise it will never happen again. Keep it within 90 words.
+
+Approved facts:
+Fictional service: ReportNest. CSV exports were unavailable from 09:00 to 09:40 UTC today. Export service is restored. Existing saved reports were not lost. The cause is still under investigation. Support address: support@example.org. No credits or compensation have been announced.",
+R10,"Write a concise LinkedIn note for team leads about reviewing an AI-generated event invitation. Use one opening sentence, exactly two bullet points, and one closing sentence. Include one bullet about factual claims and one about requested details. Do not include a question or call to action anywhere, including imperatives such as 'Check', 'Review' or 'Try'. End with a declarative takeaway. Keep the whole post within 75 words.
+
+Approved facts:
+For this fictional review, factual claims must match the supplied event facts. Requested details must match the original brief. A post is ready only when both checks pass. Fluent wording alone does not establish that a post is ready. No empirical performance claims are available.",
