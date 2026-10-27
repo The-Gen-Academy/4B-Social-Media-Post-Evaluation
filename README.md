@@ -1,28 +1,28 @@
 # Social Media Post Evaluation
 
-Generate **10 new posts** in n8n. Review every post across five dimensions, improve the generation prompt, and check whether the change helps.
+Study the worked examples, then **invent ten inputs of your own** and generate **10 new posts** in n8n. Review each post, improve the generation prompt, and check whether the change helps.
 
 **All five dimensions must PASS for the post to PASS. If any dimension FAILS, the whole post FAILS.** There are no numerical scores or averages.
 
 ## Start here
 
-- Make one copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit). An [Excel copy](Social%20Media%20Post%20Evaluation.xlsx) is also included.
-- Download the [10-request CSV](examples/10-post-requests.csv) and [generation workflow](Social%20Media%20Post%20Generation%20Workflow.json).
-- Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenRouter API key. The optional Jev exercise uses a separate TypeSafe API key.
+* Make one copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit). An [Excel copy](Social%20Media%20Post%20Evaluation.xlsx) is also included.
+* Download the [generation workflow](Social%20Media%20Post%20Generation%20Workflow.json). You will supply ten inputs of your own.
+* Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenRouter API key. The optional Jev exercise uses a separate TypeSafe API key.
 
-The ten requests include fictional approved facts so you can run the exercise immediately. You may adapt them before generating. The 12 older posts and their feedback are preserved in **Existing Examples** as reference material. They do not count toward your ten new posts.
+Start with the **12 worked reviews in Existing Examples**. See how the feedback supports the dimension decisions, overall result and main failure category. **Rubric** provides the five rules and four failure categories before you begin. Blank factual checks in older examples mean the saved evidence is insufficient. These examples do not count toward your ten new posts.
 
-## Part 1: Generate 10 posts and evaluate each dimension
+## Part 1: Invent 10 inputs, generate and evaluate
 
 1. Import the generation workflow into n8n and connect your credential to **Generate Post**.
-2. Upload the supplied 10-request CSV and run the workflow. Save the ten generated posts in **Evaluation Log**. Save the prompt and n8n run too.
+2. Invent ten different inputs in **Evaluation Log**. Include the audience, purpose, requirements and an **Approved facts:** section. Use verified facts or fictional facts you define yourself. Export your inputs as CSV, upload them to the workflow and save the ten generated posts. Save the prompt and n8n run too.
 3. Read each request, its approved facts and the resulting post. Choose **PASS or FAIL for each of the five dimensions** in the workbook. Review all five, even after finding a failure.
 4. Write a short explanation for each failed dimension. Point to the actual claim, missing content or wording. The workbook calculates the overall result automatically.
 
 ### Five PASS/FAIL dimensions
 
 | Dimension | PASS when | FAIL when |
-| --- | --- | --- |
+| ----- | ----- | ----- |
 | Factual Correctness | Concrete claims agree with the approved facts. | A claim is invented, unsupported or contradicts the facts. |
 | Clarity | The main point is easy to understand; the writing is coherent and concise. | Confusing wording, repetition or structure obscures the main point. |
 | Value / Insight | The post delivers the requested information, example, resource or useful takeaway. | It is generic filler, omits requested substance or promises content that is not supplied. |
@@ -37,7 +37,7 @@ If the source facts or request are missing, leave the affected dimension unfinis
 
 ## Part 2: Group the failures
 
-Give each failed post one main failure category: Incorrect or Hallucinated Content, Low Informational Value, Instruction Non-Compliance, or Poor Framing. Use **Failure Analysis** to see the counts and note a proposed fix.
+Choose one main category for each failed post from the supplied list: Incorrect or Hallucinated Content, Low Informational Value, Instruction Non-Compliance, or Poor Framing. Use the definitions and worked examples in **Rubric**; you do not need to invent categories. **Failure Analysis** counts your new posts. Note a proposed fix.
 
 For a few failures, inspect the n8n execution. Did the relevant facts and instructions actually reach the model? Record the evidence, likely cause and proposed fix in **Failure Traces**. Choose one recurring or high-impact problem.
 
@@ -55,32 +55,30 @@ Record what you changed and why you expect it to help. Improve the workflow rath
 
 Report the original and revised PASS counts for the same requests you reran. Note which dimension improved and whether any previously passing dimension now fails. If the first ten posts all pass or all fail, add a clearly labeled extra request to obtain the missing comparison type and report the extra case separately.
 
-## Part 5: Try automated judges (optional)
+## Part 5: Decide where Jev fits (optional)
 
-Complete your human reviews first. Then upload those same ten saved posts to [Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json). This workflow evaluates existing posts; it does not generate new ones.
+Complete your human reviews first. Jev makes fast, structured [System 1 decisions](https://docs.typesafe.ai/introduction). Ask: **can this check be made quickly from the supplied information, or does it need further evidence and reasoning?** A PASS/FAIL answer alone does not make a task simple.
 
-Both judges receive the request, approved facts, post and the same five definitions. **Neither sees your human labels or the other judge's answers.**
+Consider the five dimensions before deciding what to automate:
 
-- **Jev** receives five Choice questions, one per dimension, with PASS and FAIL as the options. It returns a choice, probabilities and confidence for each. There is no conversion to a numerical score.
-- **The independent LLM judge** returns PASS or FAIL and a short evidence-based reason for each dimension. Its explanation is its own review, not an explanation of Jev's reasoning.
-- **The workflow** calculates each judge's overall result using the same rule: five PASS decisions are required; any FAIL makes the post FAIL. Tied Jev decisions and failed calls are flagged for review, never counted as passes.
+* **Clarity and Tone Fit:** narrow checks, such as spotting undefined jargon or insulting language, may be candidates. Test them rather than assuming the whole dimension is suitable.
+* **Factual Correctness:** Jev needs your approved facts. Comparing a claim with a supplied fact is different from independently verifying truth. Reliable sources are still needed.
+* **Value / Insight and Engagement:** usefulness and audience appeal need context and judgment. A call to action alone does not establish engagement. Consider an LLM with context and human review.
 
-Connect a **TypeSafe API key** to **Call Jev** and an **OpenRouter API key** to **Independent LLM Review**. The supplied workflow already uses the correct TypeSafe URL and model. Save the downloaded results in **Judge**. Each post has five dimension rows and one overall row, so disagreements are easy to inspect.
+**Choose one dimension** and a specific check Jev might handle. Explain what information it needs and its limits. You may conclude none is suitable as currently defined.
 
-Jev is being tested as a fast structured judge. Human labels remain the reference for this exercise; subjective criteria such as value and tone still need inspection.
+To experiment, run your ten saved posts through [Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json). Connect a **TypeSafe API key** to **Call Jev** and an **OpenRouter API key** to **Independent LLM Review**. The workflow tests all five dimensions with both models; neither sees human labels or the other model's answers. Compare each dimension with your reviews. Inspect disagreements before deciding where Jev fits.
 
 ## Part 6: Improve the judge (optional)
 
-Inspect disagreements dimension by dimension. Check your own review too. If a rule is unclear, clarify that rule in the judge instructions, keep the saved posts unchanged and rerun. The [integration guide](docs/jev-integration.md) shows where the prompts live.
-
-Compare missed failures and rejected good posts before and after the change. Count missing decisions and failed runs separately. Report this as improvement on these practice posts, not proof of performance on unseen posts.
+If a suitable check has unclear instructions, refine it using the [integration guide](docs/jev-integration.md) and rerun the saved posts. Compare mistakes before and after. Missing evidence or deeper reasoning may require a different approach. These ten posts are an experiment, not proof of reliability.
 
 ## What to submit
 
-- The ten generated posts, their requests and approved facts, all five human decisions per post, overall results and brief reasons for failures.
-- Failure categories, a few supporting execution traces and the exact generation-prompt change.
-- Original and revised outputs, fresh dimension reviews, comparison results and both saved prompts/runs.
-- If you try the judges: both sets of results, disagreements with human reviews and any instruction change you tested.
+* Your ten original inputs and approved facts, the generated posts, all five human decisions per post, overall results and brief reasons for failures.
+* Failure categories, a few supporting execution traces and the exact generation-prompt change.
+* Original and revised outputs, fresh dimension reviews, comparison results and both saved prompts/runs.
+* If you try the judges: which checks suit Jev and why, supporting results and disagreements, and any instruction change you tested.
 
 ## For maintainers
 

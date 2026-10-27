@@ -2,13 +2,15 @@
 
 ## Generate
 
-1. Download `Social Media Post Generation Workflow.json` and `examples/10-post-requests.csv` from this repository. Import the JSON into n8n.
-2. Create a Header Auth credential with name `Authorization` and value `Bearer <OpenRouter API key>`. Attach it to **Generate Post**. Keep credentials in n8n, not in the prompt or CSV.
-3. Select **Execute workflow**, open the test form in **Upload Posts CSV**, and upload the request CSV. Wait for all ten requests to finish.
-4. Download `linkedin_posts_output.csv` from **Download Results CSV**. Copy its three data columns into **Evaluation Log A:C**, starting in row 2. Keep the template headers and the review/formula cells to the right. This is one paste for the whole run.
-5. Review every dimension using its PASS/FAIL dropdown. Explain failures. **Status** is calculated: any FAIL gives FAIL; all five PASS gives PASS; an unfinished review shows PENDING.
+Start with **Existing Examples** in the workbook. These 12 worked reviews show how the supplied feedback maps to dimension decisions and a main failure category. **Rubric** gives you the five evaluation rules and four failure-category definitions. Blank factual checks in older examples mean the saved evidence is insufficient; a known failure still makes the overall result FAIL.
 
-The supplied scenarios and facts are fictional practice data. You can change them before running. If you change the requests already in Evaluation Log, export that tab as CSV instead. Generation requires an `Approved facts:` section and a blank `Model_Output`. Existing posts are preserved, not regenerated. An incomplete generation stops the download with an actionable error; inspect the named request and rerun after fixing it.
+1. Download `Social Media Post Generation Workflow.json` and import it into n8n.
+2. Create a Header Auth credential with name `Authorization` and value `Bearer <OpenRouter API key>`. Attach it to **Generate Post**. Keep credentials in n8n, not in the prompt or CSV.
+3. Invent ten inputs in **Evaluation Log**, keeping IDs P01 through P10. Give each request an audience, purpose, requirements and an `Approved facts:` section. Use verified facts or fictional facts you define yourself. Leave the post and review fields empty, and export this tab as CSV. Select **Execute workflow**, open the test form in **Upload Posts CSV**, and upload your CSV. Wait for all ten requests to finish.
+4. Download `linkedin_posts_output.csv` from **Download Results CSV**. Copy its three data columns into **Evaluation Log A:C**, starting in row 2. Keep the template headers and the review/formula cells to the right. This is one paste for the whole run.
+5. Review every dimension using its PASS/FAIL dropdown. Explain failures and choose one main category from the supplied list. **Status** is calculated: any FAIL gives FAIL; all five PASS gives PASS; an unfinished review shows PENDING.
+
+The older example CSV in the repository is reference material; your assignment is to invent ten inputs of your own. Generation requires an `Approved facts:` section and a blank `Model_Output`. Existing posts are preserved, not regenerated. An incomplete generation stops the download with an actionable error; inspect the named request and rerun after fixing it.
 
 ## Revise
 
