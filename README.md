@@ -37,9 +37,9 @@ If the source facts or request are missing, leave the affected dimension unfinis
 
 ## Part 2: Group the failures
 
-Choose one main category for each failed post from the supplied list: Incorrect or Hallucinated Content, Low Informational Value, Instruction Non-Compliance, or Poor Framing. Use the definitions and worked examples in **Rubric**; you do not need to invent categories. **Failure Analysis** counts your new posts. Note a proposed fix.
+Choose one main category for each failed post: False or Unsupported Claims, Missing Useful Content, Missing Essential Details, or Missing Closing Action. These patterns come from the 12 saved posts and instructor feedback. Use the definitions and examples in **Rubric**. **Failure Analysis** counts your new posts. Note a proposed fix.
 
-For a few failures, inspect the n8n execution. Did the relevant facts and instructions actually reach the model? Record the evidence, likely cause and proposed fix in **Failure Traces**. Choose one recurring or high-impact problem.
+For a few failures, inspect the n8n execution. Did the relevant facts and instructions actually reach the model? If essential details were never supplied, fix the brief; do not invent them. An ambiguous request does not prove an instruction was ignored. Record the evidence, likely cause and proposed fix in **Failure Traces**. Choose one recurring or high-impact problem.
 
 ## Part 3: Improve the generation prompt
 
