@@ -1,7 +1,7 @@
 // Pure functions shared by the CLI and generated n8n Code nodes.
 import {DIMENSIONS, POLICY, RUBRIC_VERSION, overallDecision} from './rubric.js';
 export {RUBRIC_VERSION, POLICY} from './rubric.js';
-export const JUDGE_VERSION = 'jev-dimensions-v3.0';
+export const JUDGE_VERSION = 'jev-dimensions-v4.0';
 export const DEFAULT_MODEL = 'jev-1.13.0';
 export const REVIEW_MODEL = 'openai/gpt-4.1-mini';
 export function clean(value) { return String(value ?? '').trim(); }

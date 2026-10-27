@@ -10,6 +10,8 @@ Start with **Existing Examples** in the workbook. These 12 worked reviews show h
 4. Download `linkedin_posts_output.csv` from **Download Results CSV**. Copy its three data columns into **Evaluation Log A:C**, starting in row 2. Keep the template headers and the review/formula cells to the right. This is one paste for the whole run.
 5. Review every dimension using its PASS/FAIL dropdown. Explain failures and choose one main category from the supplied list. **Status** is calculated: any FAIL gives FAIL; all five PASS gives PASS; an unfinished review shows PENDING.
 
+The [challenge CSV](../examples/challenge-requests.csv) supplies ten ready-to-run instructor requests with blank outputs. The Rubric tab lists their acceptance checks. Use a fresh workbook copy for this batch, save its generated posts in Evaluation Log, and use rubric v4 for both the baseline and rerun. Comparison takes its IDs from Evaluation Log, so the R01-R10 challenge IDs also work. Retain all results. These inputs do not guarantee failures.
+
 The older example CSV in the repository is reference material; your assignment is to invent ten inputs of your own. Generation requires an `Approved facts:` section and a blank `Model_Output`. Existing posts are preserved, not regenerated. An incomplete generation stops the download with an actionable error; inspect the named request and rerun after fixing it.
 
 ## Revise
