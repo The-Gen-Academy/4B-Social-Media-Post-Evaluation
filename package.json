@@ -9,7 +9,8 @@
   "scripts": {
     "test": "node --test",
     "build:workflows": "node scripts/build-workflows.js",
-    "judge": "node --env-file-if-exists=.env src/cli.js"
+    "judge": "node --env-file-if-exists=.env src/cli.js",
+    "judge:category": "node --env-file-if-exists=.env src/category-cli.js"
   },
   "dependencies": {
     "csv-parse": "7.0.3",

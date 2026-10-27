@@ -1,23 +1,23 @@
 # Social Media Post Evaluation
 
-Study the worked examples, then **invent ten inputs of your own** and generate **10 new posts** in n8n. Review each post, improve the generation prompt, and check whether the change helps.
+Study the worked examples, then run the n8n workflow to generate 10 posts from your own inputs. Add the outputs to Evaluation Log, review all five dimensions, group the failures in Failure Analysis, and save every failed post in Failure Traces.
 
 **All five dimensions must PASS for the post to PASS. If any dimension FAILS, the whole post FAILS.** There are no numerical scores or averages.
 
 ## Start here
 
-* Make one copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit). An [Excel copy](Social%20Media%20Post%20Evaluation.xlsx) is also included.
+* Make a copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit).
 * Download the [generation workflow](Social%20Media%20Post%20Generation%20Workflow.json). You will supply ten inputs of your own.
-* Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenRouter API key. The optional Jev exercise uses a separate TypeSafe API key.
+* Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenRouter API key. The optional failure-category judge uses an OpenAI API key.
 
-Start with the **12 worked reviews in Existing Examples**. See how the feedback supports the dimension decisions, overall result and main failure category. **Rubric** provides the five rules and four failure categories before you begin. Blank factual checks in older examples mean the saved evidence is insufficient. These examples do not count toward your ten new posts.
+The workbook has three tabs: Evaluation Log, Failure Analysis and Failure Traces. Start with the 12 worked reviews already in Evaluation Log. See how the feedback supports the PASS/FAIL decisions and the main failure category; the failed examples are also in Failure Traces. Keep these examples as a reference. They do not count toward your ten new posts.
 
 ## Part 1: Invent 10 inputs, generate and evaluate
 
-1. Import the generation workflow into n8n and connect your credential to **Generate Post**.
-2. Invent ten varied inputs in **Evaluation Log**: two routine requests and eight realistic challenges. Use **Challenge Cases** in the workbook for ideas about missing facts, practical substance, statistics, feature status, updated notes, jargon, tone and closing requirements. Include the audience, purpose, requirements and an **Approved facts:** section. Use verified facts or fictional facts you define yourself. Export your inputs as CSV, upload them to the workflow and save the ten generated posts. Save the prompt and n8n run too.
-3. Read each request, its approved facts and the resulting post. Choose **PASS or FAIL for each of the five dimensions** in the workbook. Review all five, even after finding a failure.
-4. Write a short explanation for each failed dimension. Point to the actual claim, missing content or wording. The workbook calculates the overall result automatically.
+1. Set up n8n. Import the generation workflow and connect your OpenRouter credential to Generate Post. Keep API keys in n8n credentials, not in the workbook or prompt.
+2. Generate 10 posts. Invent ten different LinkedIn post requests and give each a unique post ID. Include the audience, purpose and any requirements. Put an Approved facts: section at the end of each request, using verified facts or fictional facts you define. Upload a CSV containing only these ten new requests, with the post text empty. Select Execute workflow, open the upload form and run the workflow until all ten posts are generated.
+3. Add the outputs to Evaluation Log. Download linkedin_posts_output.csv and add its post IDs, original requests and generated posts beneath the worked examples. Keep the existing headers, review fields and overall-result formulas. Save the generation prompt and n8n execution so you can inspect what happened.
+4. Evaluate all 10 posts. Read the request, supplied facts and generated output. Mark PASS or FAIL for Factual Correctness, Clarity, Value, Engagement and Tone. Review every dimension, even after finding a failure. Write brief human feedback that points to the main problem and explains every failed dimension. All five must PASS for the overall post to PASS; any FAIL makes it FAIL.
 
 ### Five PASS/FAIL dimensions
 
@@ -29,17 +29,17 @@ Start with the **12 worked reviews in Existing Examples**. See how the feedback 
 | Engagement | The opening gives a specific reason to read. The ending provides a feasible action or specific question. | The opening is generic hype, the ending is absent or only says 'Thoughts?', or it includes a prohibited call to action. |
 | Tone Fit | The wording respects the reader and matches the audience, voice and situation. An apology acknowledges inconvenience. | A phrase insults or pressures the reader, minimizes a problem, or conflicts with the requested voice. |
 
-Use rubric v4 for new reviews. If a request prohibits a call to action or question, end with a declarative takeaway; "Review both" is still a call to action. A missed word limit, format or required link fails Value / Insight. Count whitespace-separated words in the entire post. The **Rubric** tab has full definitions, PASS/FAIL examples and a checklist for every challenge case.
+Use the definitions above for your new reviews. Value and Tone in the workbook mean Value / Insight and Tone Fit in these definitions. If a request prohibits a call to action or question, the ending should be a declarative takeaway; 'Review both' is still a call to action. A missed word limit, format or required link fails Value / Insight. Count words across the entire post, including headings, bullets and links.
 
 **Worked example:** The approved facts say a workshop is free, online, 60 minutes long and offers no certificate. A clear, useful and engaging post promises a certificate. Mark Factual Correctness **FAIL**. The other four dimensions may PASS, but the overall result is **FAIL**. Four passes cannot cancel one failure.
 
 If evidence needed to judge a claim is missing, leave that dimension unfinished and explain what is needed. An explicitly unknown date or link may remain unknown; do not demand invented details. Clearly hypothetical teaching examples are allowed when consistent with the supplied facts. A post with unfinished reviews shows **PENDING**, unless another dimension already fails. Complete all five reviews before moving on.
 
-## Part 2: Group the failures
+## Part 2: Analyse failures and save failed traces
 
-Choose one main category when it fits: False or Unsupported Claims, Missing Useful Content, Missing Essential Details, or Missing Closing Action. If a new failure fits none of these, explain it in your feedback and propose a category rather than forcing a match. These patterns come from the 12 saved posts and instructor feedback. Use the definitions and examples in **Rubric**. **Failure Analysis** counts your new posts. Note a proposed fix.
+Update Failure Analysis using the patterns in your feedback. Start with the five supplied categories: Unsupported Claims, Missing Practical Detail, Wrong Content Type, Missing or Inappropriate CTA, and Missing Context. Read their definitions and suggested fixes in that tab. Choose one main category for each failed post in Evaluation Log. If none fits, add your own clearly named category to the dropdown and Failure Analysis, with a short definition and a proposed fix. Make sure its count includes the matching failed posts. Existing counts include the worked examples, so report the failures from your ten new posts separately.
 
-For a few failures, inspect the n8n execution. Did the relevant facts and instructions actually reach the model? If essential details were never supplied, fix the brief; do not invent them. An ambiguous request does not prove an instruction was ignored. Record the evidence, likely cause and proposed fix in **Failure Traces**. Choose one recurring or high-impact problem.
+Add every failed post to Failure Traces. Keep its post ID, original request, generated output, all five dimension decisions, overall FAIL and human feedback together. Assign one failure category to each failed trace, matching its category in Evaluation Log. The main category should be inferable from the feedback; keep any secondary problems in the explanation. For a few failures, also inspect the saved n8n execution to check what instructions and facts reached the model. Use this evidence to identify a likely cause and a specific fix.
 
 ## Part 3: Improve the generation prompt
 
@@ -50,42 +50,43 @@ Record what you changed and why you expect it to help. Improve the workflow rath
 ## Part 4: Rerun and compare
 
 1. Run the revised generator on the requests whose posts failed, plus at least one whose post passed. Keep the original requests and facts unchanged.
-2. Save the new outputs in **Revised Posts** and review all five dimensions again. Keep the original posts and reviews in Evaluation Log.
-3. Open **Comparison**. It matches the request IDs and shows whether each result was fixed, got worse, still passes or still fails. You do not need to fill comparison labels manually.
+2. Add the revised outputs as new, clearly labelled rows in Evaluation Log and review all five dimensions again. Give each revision a new post ID and note which original post it revises in the feedback. Keep the original outputs and reviews intact.
+3. Compare each revised post with its original review: FAIL to PASS is fixed; PASS to FAIL is a regression; otherwise it still passes or still fails. Add any revised failures to Failure Traces and update Failure Analysis. Use these same three tabs; no separate comparison tab is required.
 
-Report the original and revised PASS counts for the same requests you reran. Note which dimension improved and whether any previously passing dimension now fails. If all ten pass or all fail, try a clearly labeled extra case and report it separately. Keep every result. A challenge may still pass; use the existing worked failures to practice diagnosis, and do not claim a repair unless a saved failed case actually improves.
+Report the original and revised PASS counts for the same requests, noting improvements and regressions by dimension. Keep every output. If all ten pass, use a supplied worked failure to practise diagnosis. Do not claim a fix unless a saved failed post actually improves.
 
-## Part 5: Decide where Jev fits (optional)
+## Part 5: Calibrate an LLM judge for one failure category (optional)
 
-Complete your human reviews first. Jev makes fast, structured [System 1 decisions](https://docs.typesafe.ai/introduction). Ask: **can this check be made quickly from the supplied information, or does it need further evidence and reasoning?** A PASS/FAIL answer alone does not make a task simple.
+Choose the **one failure category you care about most**. Complete your human reviews and assign one main category to every failed trace first. This exercise tests whether the judge identifies the same **main problem** you identified. It does not replace the five human PASS/FAIL decisions.
 
-Consider the five dimensions before deciding what to automate:
+1. Import [Social Media LLM Category Judge.json](Social%20Media%20LLM%20Category%20Judge.json) into n8n. Attach an **OpenAI API credential** to **Ask OpenAI**. The model is `gpt-5.4-mini`, called directly through OpenAI.
+2. Open **Choose Failure Category**. Edit the three fields at the top: the exact category name, a short definition, and a contrast rule explaining how it differs from similar problems. The five existing definitions are supplied in the node.
+3. Export **Failure Traces** as CSV and upload it through the workflow. Include traces whose main category is your chosen category and traces assigned to other categories. Keep the saved posts and human labels fixed.
+4. Download `category_judge_results.csv`. Open **Calibration Summary** to see agreement, missed matches, false alarms and unresolved cases. No extra workbook tab is needed.
 
-* **Clarity and Tone Fit:** narrow checks, such as spotting undefined jargon or insulting language, may be candidates. Test them rather than assuming the whole dimension is suitable.
-* **Factual Correctness:** Jev needs your approved facts. Comparing a claim with a supplied fact is different from independently verifying truth. Reliable sources are still needed.
-* **Value / Insight and Engagement:** usefulness and audience appeal need context and judgment. A call to action alone does not establish engagement. Consider an LLM with context and human review.
+**What the judge sees:** the selected definition, contrast rule, request, saved post and any supplied approved facts. It never sees the human category, feedback or dimension decisions. Facts come from `Reference_Facts` or the text after `Approved facts:` in the request; this is a text parser, not independent fact checking.
 
-**Choose one dimension** and a specific check Jev might handle. Explain what information it needs and its limits. You may conclude none is suitable as currently defined.
+**What TRUE and FALSE mean:** TRUE means the selected category is the post's main problem. FALSE means it is not the main problem, even if a secondary issue of that kind is present. Every input is already a failed post, so FALSE does not mean the post passes. Missing evidence and failed calls remain unresolved.
 
-To experiment, run your ten saved posts through [Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json). Connect a **TypeSafe API key** to **Call Jev** and an **OpenRouter API key** to **Independent LLM Review**. The workflow tests all five dimensions with both models; neither sees human labels or the other model's answers. Compare each dimension with your reviews. Inspect disagreements before deciding where Jev fits.
+The workflow creates the comparison label automatically: **TRUE** when the saved human `Failure_Category` exactly matches the selected category, **FALSE** otherwise. It compares this label with the judge only after the model call. This evaluates agreement with the human main-category assignment, not every failure that may be present.
 
-## Part 6: Improve the judge (optional)
+## Part 6: Inspect disagreements and improve the definition
 
-If a suitable check has unclear instructions, refine it using the [integration guide](docs/jev-integration.md) and rerun the saved posts. Compare mistakes before and after. Missing evidence or deeper reasoning may require a different approach. These ten posts are an experiment, not proof of reliability.
+Read the post and the judge's reason for each mismatch. A **false alarm** is judge TRUE with human FALSE. A **miss** is judge FALSE with human TRUE. Check whether the issue is an unclear definition, a missing distinction, missing evidence or an incorrect human label. Do not change a label just to agree with the model.
+
+Clarify the definition or contrast rule, save the previous results, and rerun the same saved traces. Compare agreement and unresolved counts. Report accuracy as matches / completed calls, alongside the total traces and errors. Include both TRUE and FALSE human cases; a one-class set cannot test both kinds of mistake. Improvement on these examples is prompt calibration, not proof that the judge will work on new posts.
+
+### Older Jev experiment
+
+[Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json) and the combined generation workflow remain available as an advanced, separate five-dimension experiment. They use TypeSafe for Jev and OpenRouter for the independent LLM. They are not required for the one-category OpenAI exercise. See [the older integration guide](docs/jev-integration.md).
 
 ## What to submit
 
-* Your ten original inputs and approved facts, the generated posts, all five human decisions per post, overall results and brief reasons for failures.
-* Failure categories, a few supporting execution traces and the exact generation-prompt change.
-* Original and revised outputs, fresh dimension reviews, comparison results and both saved prompts/runs.
-* If you try the judges: which checks suit Jev and why, supporting results and disagreements, and any instruction change you tested.
-
-## Ready-to-run challenge dataset
-
-[Download ten challenge inputs](examples/challenge-requests.csv). The same inputs are in **Challenge Cases** in the workbook. This is an instructor demonstration set with two routine and eight challenging requests, not ten pre-labeled failures. Participants can use it to design ten inputs of their own. The [case definitions](examples/challenge-requests.json) include review checks; only the request and approved facts are sent to the generator.
-
-All facts are fictional. Outputs and human labels are deliberately blank. Use rubric `social-dimensions-v4` for the fresh baseline and its rerun. The earlier P01-P10 results used v3 and have not been relabeled.
+* Your ten original requests and supplied facts, generated posts, all five human PASS/FAIL decisions, overall results and feedback in Evaluation Log. Preserve the twelve worked examples.
+* Updated Failure Analysis with categories, counts and proposed fixes. Define any new category. Include every failed post in Failure Traces with its feedback and assigned main category.
+* The generation-prompt change, saved n8n runs, revised outputs and fresh reviews, plus a before/after comparison of the same requests.
+* If you try the optional judge: your selected category and definition, saved results, disagreements and the instruction change you tested. Report agreement as matches out of resolved traces, alongside unresolved traces and errors.
 
 ## For maintainers
 
-`src/rubric.js` holds the shared five-dimension policy. `src/generation.js` holds the generator system prompt. `src/judge.js` builds Jev's questions and the independent LLM prompt. Run `npm ci`, `npm run build:workflows`, then `npm test` after changes. See [validation](docs/validation.md).
+`src/rubric.js` holds the five-dimension policy. `src/generation.js` holds the generator prompt. `src/category-judge.js` holds the one-category OpenAI prompt and comparison. `src/judge.js` supports the older Jev experiment. Run `npm ci`, `npm run build:workflows` and `npm test` after edits. See [validation](docs/validation.md) and the [category judge guide](docs/category-judge.md).

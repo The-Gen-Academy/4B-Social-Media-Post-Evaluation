@@ -11,8 +11,9 @@ export function workshopInput(row) {
   const brief = textValue(row.User_Input);
   const match = brief.match(/(?:^|\n)Approved facts:\s*([\s\S]+)/i);
   const facts = textValue(row.Reference_Facts) || (match ? match[1].trim() : '');
-  const dimensions = Object.fromEntries(DIMENSIONS.map(d=>[d.key,decisionValue(row[d.key])]));
-  const hasDimensions = DIMENSIONS.some(d=>Object.hasOwn(row,d.key));
+  const aliases = {Value_Insight:'Value',Tone_Fit:'Tone'};
+  const dimensions = Object.fromEntries(DIMENSIONS.map(d=>[d.key,decisionValue(row[d.key] ?? row[aliases[d.key]])]));
+  const hasDimensions = DIMENSIONS.some(d=>Object.hasOwn(row,d.key) || (aliases[d.key] && Object.hasOwn(row,aliases[d.key])));
   return {...row, ...dimensions,
     Run_ID: textValue(row.Run_ID) || 'workbook',
     Reference_Facts: facts,

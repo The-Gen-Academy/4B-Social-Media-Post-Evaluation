@@ -5,6 +5,17 @@ import {readFile} from 'node:fs/promises';
 import {row,responseFor,reviewFor} from './fixtures.js';
 import {POST_COLUMNS,JUDGE_COLUMNS,workshopResult} from '../src/workshop.js';
 const files=['Social Media Post Generation Workflow.json','Social Media Jev Judge Only.json','Social Media Post Generation with Jev Judge.json'];
+test('every importable form has a distinct stable webhook UUID before the editor opens it',async()=>{
+  const ids=[];
+  for(const file of [...files,'Social Media LLM Category Judge.json']) {
+    const workflow=JSON.parse(await readFile(file,'utf8'));
+    const forms=workflow.nodes.filter(node=>node.type==='n8n-nodes-base.formTrigger');
+    assert.equal(forms.length,1);
+    assert.match(forms[0].webhookId,/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    ids.push(forms[0].webhookId);
+  }
+  assert.equal(new Set(ids).size,4);
+});
 for(const file of files) test(file+' has valid graph, no shipped secrets, and executable embedded code',async()=>{
   const w=JSON.parse(await readFile(file,'utf8')),names=new Set(w.nodes.map(n=>n.name));
   assert.equal(w.active,false);assert.deepEqual(w.pinData,{});
