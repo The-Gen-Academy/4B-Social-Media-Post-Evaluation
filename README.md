@@ -8,15 +8,19 @@ Study the worked examples, then run the n8n workflow to generate 10 posts from y
 
 * Make a copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit).
 * Download the [generation workflow](Social%20Media%20Post%20Generation%20Workflow.json). You will supply ten inputs of your own.
-* Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenRouter API key. The optional failure-category judge uses an OpenAI API key.
+* Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenAI API key. The optional failure-category judge uses an OpenAI API key.
+
+The generation workflow restores the earliest creator/critic flow from [commit 5ce7666](https://github.com/The-Gen-Academy/4B-Social-Media-Post-Evaluation/commit/5ce766661130e0fc8adec89702f1ada71c43f5f7): **Upload CSV → Creator → Critic → revision check → output CSV**. Both model nodes call OpenAI directly. The original defaults are `gpt-5.5-pro` for creation and `gpt-5-mini` for critique; choose an available OpenAI model in each node if needed. Select your own credentials after import. The exported workflow is inactive and contains no account credential references.
+
+The built-in critic's PASS/FAIL and 0–100 quality score guide generation. Your five human PASS/FAIL reviews in the workbook remain the evaluation record, and the optional failure-category judge is a separate exercise.
 
 The workbook has three tabs: Evaluation Log, Failure Analysis and Failure Traces. Start with the 12 worked reviews already in Evaluation Log. See how the feedback supports the PASS/FAIL decisions and the main failure category; the failed examples are also in Failure Traces. Keep these examples as a reference. They do not count toward your ten new posts.
 
 ## Part 1: Invent 10 inputs, generate and evaluate
 
-1. Set up n8n. Import the generation workflow and connect your OpenRouter credential to Generate Post. Keep API keys in n8n credentials, not in the workbook or prompt.
-2. Generate 10 posts. Invent ten different LinkedIn post requests and give each a unique post ID. Include the audience, purpose and any requirements. Put an Approved facts: section at the end of each request, using verified facts or fictional facts you define. Upload a CSV containing only these ten new requests, with the post text empty. Select Execute workflow, open the upload form and run the workflow until all ten posts are generated.
-3. Add the outputs to Evaluation Log. Download linkedin_posts_output.csv and add its post IDs, original requests and generated posts beneath the worked examples. Keep the existing headers, review fields and overall-result formulas. Save the generation prompt and n8n execution so you can inspect what happened.
+1. Set up n8n. Import the generation workflow and select your OpenAI API credential in both **OpenAI Chat Model** (creator) and **OpenAI Chat Model1** (critic). Keep API keys in n8n credentials, not in the workbook or prompt.
+2. Generate 10 posts. Invent ten different LinkedIn post requests and give each a unique post ID. Include the audience, purpose and any requirements. Put an Approved facts: section at the end of each request, using verified facts or fictional facts you define. Upload a CSV with the exact headers `Test_ID`, `User_Input` and `Model_Output`, containing only these ten new requests with `Model_Output` blank. Select Execute workflow, open **Upload Excel Form**, and run the workflow until all ten posts are generated.
+3. Add the outputs to Evaluation Log. Download `linkedin_posts_output.csv` from **Convert to Excel** (the output is CSV) and add its post IDs, original requests and generated posts beneath the worked examples. Keep the existing headers, review fields and overall-result formulas. Save the generation prompt and n8n execution so you can inspect what happened.
 4. Evaluate all 10 posts. Read the request, supplied facts and generated output. Mark PASS or FAIL for Factual Correctness, Clarity, Value, Engagement and Tone. Review every dimension, even after finding a failure. Write brief human feedback that points to the main problem and explains every failed dimension. All five must PASS for the overall post to PASS; any FAIL makes it FAIL.
 
 ### Five PASS/FAIL dimensions
@@ -43,7 +47,7 @@ Add every failed post to Failure Traces. Keep its post ID, original request, gen
 
 ## Part 3: Improve the generation prompt
 
-Save the original prompt. Change one instruction in **Prepare Generation** to address the problem you observed. For example, clarify which facts may be used, require a missing practical example, or demonstrate the desired tone with a short example. Keep the same rubric version fixed for both runs. If you change a definition, review both sets again under the new rule before comparing them.
+Save the original prompt. Change one instruction in **LinkedIn Creator Agent1 → Options → System Message** to address the problem you observed. For example, clarify which facts may be used, require a missing practical example, or demonstrate the desired tone with a short example. Keep the same rubric version fixed for both runs. If you change a definition, review both sets again under the new rule before comparing them.
 
 Record what you changed and why you expect it to help. Improve the workflow rather than editing the generated posts by hand.
 
@@ -89,4 +93,4 @@ Clarify the definition or contrast rule, save the previous results, and rerun th
 
 ## For maintainers
 
-`src/rubric.js` holds the five-dimension policy. `src/generation.js` holds the generator prompt. `src/category-judge.js` holds the one-category OpenAI prompt and comparison. `src/judge.js` supports the older Jev experiment. Run `npm ci`, `npm run build:workflows` and `npm test` after edits. See [validation](docs/validation.md) and the [category judge guide](docs/category-judge.md).
+`src/rubric.js` holds the five-dimension policy. The base workflow keeps its original creator prompt in **LinkedIn Creator Agent1** and is not regenerated. `src/generation.js` holds the generator prompt for the separate combined Jev experiment. `src/category-judge.js` holds the one-category OpenAI prompt and comparison. `src/judge.js` supports the older Jev experiment. Run `npm ci`, `npm run build:workflows` and `npm test` after edits. See [validation](docs/validation.md) and the [category judge guide](docs/category-judge.md).

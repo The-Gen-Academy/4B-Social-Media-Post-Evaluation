@@ -71,8 +71,9 @@ function build(name,{generate=false,judge=false}) {
   nodes.at(-1).position=[240,20];
   return {name,nodes,connections,active:false,pinData:{},settings:{executionOrder:'v1'}};
 }
+// The base generation workflow is the original native OpenAI creator/critic export.
+// Preserve it as a hand-maintained import; this builder owns only the later experiments.
 for(const [file,options] of [
-  ['Social Media Post Generation Workflow.json',{generate:true}],
   ['Social Media Jev Judge Only.json',{judge:true}],
   ['Social Media Post Generation with Jev Judge.json',{generate:true,judge:true}],
 ]) { await writeFile(resolve(root,file),JSON.stringify(build(file.replace('.json',''),options),null,2)+'\n'); console.log('Built '+file); }

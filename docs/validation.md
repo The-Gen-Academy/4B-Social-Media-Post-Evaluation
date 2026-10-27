@@ -34,3 +34,12 @@ Under the earlier five-category taxonomy, the then-default **Missing Practical D
 The browser upload path was then tested with two saved traces (POST_004 and POST_008). The corrected imported form waited for the CSV, parsed both rows, completed both OpenAI calls, and provided a downloadable results file. Both rows were OK and matched their human main categories. The fix adds stable, distinct webhook IDs to all four supplied workflows. This two-row transport check is separate from the ten-row calibration baseline above.
 
 The current taxonomy has four categories: Incorrect or Hallucinated Content, Low Informational Value, Poor Framing, and Missing or Inappropriate CTA. Low Informational Value is now the workflow default and includes promotional copy that omits the requested substantive content. Poor Framing includes missing scope or context. The ten-row and two-row live results above used the earlier taxonomy and have not been relabeled. No live accuracy result is claimed for the revised categories.
+
+
+## Original OpenAI generation workflow restored
+
+The base `Social Media Post Generation Workflow.json` now restores the node configuration and graph from commit `5ce7666`. Deployment-specific account references and instance metadata are removed, and the export is inactive. The original native OpenAI creator (`gpt-5.5-pro`), critic (`gpt-5-mini`), structured parsers, revision branch and CSV merge remain. Importers select their own OpenAI credential in both model nodes.
+
+This historical file is hand-maintained; `build:workflows` no longer replaces it with the later OpenRouter generator. The two older Jev examples and the standalone category judge still rebuild from source. Earlier generation-validation claims above describe the later shared-source workflows, not this restored file. The restored workflow is checked for graph integrity, direct OpenAI connections, executable Code nodes, blank-row selection and original-row output merging. No fresh live n8n or model run was performed for the restore.
+
+All 36 automated tests passed after the restore. The build regenerated only the three maintained experiment/category workflows and left the restored base workflow intact.

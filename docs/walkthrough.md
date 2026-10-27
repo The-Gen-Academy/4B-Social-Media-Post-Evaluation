@@ -2,20 +2,24 @@
 
 ## Generate and review
 
+This restores the earliest OpenAI generation workflow from commit `5ce7666`. It is supplied inactive, without account credential references. Both model calls go directly to OpenAI.
+
 The workbook has three tabs: **Evaluation Log**, **Failure Analysis** and **Failure Traces**. The twelve worked reviews are already in Evaluation Log; failed examples are also in Failure Traces. Keep them as reference examples. Your ten new posts are separate.
 
-1. Import `Social Media Post Generation Workflow.json` into n8n. Create a Header Auth credential with name `Authorization` and value `Bearer <OpenRouter API key>`, and attach it to **Generate Post**. Keep keys in credentials.
-2. Invent ten LinkedIn requests with unique post IDs. Include the audience, purpose, requirements and an `Approved facts:` section at the end. Use verified facts or fictional facts you supply. Prepare a CSV with only these ten requests and blank post text.
-3. Select **Execute workflow**, open the test form in **Upload Posts CSV**, and upload the CSV. Download `linkedin_posts_output.csv` from **Download Results CSV** when all ten posts are ready.
+1. Import `Social Media Post Generation Workflow.json` into n8n. Create an **OpenAI API credential** and select it in both **OpenAI Chat Model** (creator) and **OpenAI Chat Model1** (critic). The original models are `gpt-5.5-pro` and `gpt-5-mini`, respectively; select an available OpenAI model in each node if necessary. Keep keys in credentials.
+2. Invent ten LinkedIn requests with unique post IDs. Include the audience, purpose, requirements and an `Approved facts:` section at the end. Use verified facts or fictional facts you supply. Prepare a CSV with exact headers `Test_ID`, `User_Input`, `Model_Output`, only these ten requests, and blank `Model_Output` cells. The creator reads `User_Input` directly, so keep that header exactly.
+3. Select **Execute workflow**, open the test form in **Upload Excel Form**, and upload the CSV. Download `linkedin_posts_output.csv` from **Convert to Excel** (despite its name, this node exports CSV) when all ten posts are ready.
 4. Add the post IDs, original requests and outputs beneath the worked examples in **Evaluation Log**. Keep the review fields and overall formulas. Save the generation prompt and execution.
 5. Review Factual Correctness, Clarity, Value, Engagement and Tone for every post. Mark each PASS or FAIL and explain failed dimensions in your own feedback. Any FAIL makes the post FAIL; all five must PASS for an overall PASS.
 6. Update **Failure Analysis** and assign one main category to every failed post. Add a clearly defined category when the existing categories do not fit. Add every failed post, its review and matching main category to **Failure Traces**. Existing category counts include worked examples; report your ten new posts separately.
 
-Generation requires approved facts and blank `Model_Output` cells. Existing posts are preserved. An incomplete generation stops the download with an error so you can fix the named request or credential and rerun it. A request may produce a good post; do not change the grading rules merely to create a failure.
+The original workflow sends each blank post through **LinkedIn Creator Agent1**, **LinkedIn Critic Agent1**, and **Check Critic Feedback1**. The failure branch returns feedback and the previous post through **Prepare Revision Context**; the other branch collects output and merges it into the uploaded rows. Existing nonblank `Model_Output` rows are preserved. Approved facts belong in each request; this historical workflow does not separately validate their presence.
+
+Check that all ten output rows contain a post before reviewing them. If a node fails or an output is blank, inspect the n8n execution and rerun the affected requests. The critic's PASS/FAIL and 0–100 quality score are generation feedback; complete the five human PASS/FAIL decisions yourself. A request may produce a good post; do not change the grading rules merely to create a failure.
 
 ## Revise
 
-Save the baseline workflow. In **Prepare Generation**, find `GENERATOR_PROMPT` and change one instruction to address an observed problem. Keep the original requests, facts and evaluation rules fixed.
+Save the baseline workflow. In **LinkedIn Creator Agent1 → Options → System Message**, find the generation instructions and change one instruction to address an observed problem. Keep the original requests, facts and evaluation rules fixed.
 
 Run the failed requests and at least one previously passing request, with their post text cleared in the input CSV. Add revised outputs as new rows in **Evaluation Log**, using new IDs and noting which originals they revise. Review all five dimensions again. Compare original and revised decisions, add revised failures to **Failure Traces** and update **Failure Analysis**. Use the same three tabs; no comparison tab is needed. Preserve every original output and review.
 
