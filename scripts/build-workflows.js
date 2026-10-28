@@ -22,6 +22,13 @@ const node = (name,type,parameters,version=2) => ({id:name.toLowerCase().replace
 const code = (name,source,all=false) => node(name,'code',{mode:all?'runOnceForAllItems':'runOnceForEachItem',jsCode:source});
 const condition = (name,expression) => node(name,'if',{conditions:{options:{caseSensitive:true,leftValue:'',typeValidation:'strict',version:2},conditions:[{id:name,leftValue:expression,rightValue:'',operator:{type:'boolean',operation:'true',singleValue:true}}],combinator:'and'},options:{}},2.2);
 const http = (name,url) => ({...node(name,'httpRequest',{method:'POST',url,authentication:'genericCredentialType',genericAuthType:'httpHeaderAuth',sendBody:true,contentType:'json',specifyBody:'json',jsonBody:'={{ JSON.stringify($json.request) }}',options:{timeout:60000,response:{response:{responseFormat:'json'}}}},4.2),retryOnFail:true,maxTries:3,waitBetweenTries:5000,onError:'continueRegularOutput'});
+function openai(name) {
+  const request = http(name,'https://api.openai.com/v1/chat/completions');
+  request.parameters.authentication = 'predefinedCredentialType';
+  request.parameters.nodeCredentialType = 'openAiApi';
+  delete request.parameters.genericAuthType;
+  return request;
+}
 function build(name,{generate=false,judge=false}) {
   const nodes = [
     node('Upload Posts CSV','formTrigger',{formTitle:name,formDescription:'Upload the provided 10-request CSV to generate posts, or a reviewed Evaluation Log CSV to judge saved posts. Each request must include an Approved facts: section. Generation keeps existing posts; use blank Model_Output cells for a new run.',formFields:{values:[{fieldLabel:'CSV File',fieldType:'file',fieldName:'csv_file',multipleFiles:false,acceptFileTypes:'.csv',requiredField:true}]},options:{appendAttribution:false}},2.5),
@@ -42,7 +49,7 @@ function build(name,{generate=false,judge=false}) {
     nodes.push(
       code('Prepare Generation',`${core}\n${generator}\nconst row=$json; const ready=generationEligibility(row); return {json:{row,ready,request:ready.status==='READY'?buildGenerationRequest(row):null}};`),
       condition('Needs Generation',"={{ $json.ready.status === 'READY' }}"),
-      http('Generate Post','https://openrouter.ai/api/v1/chat/completions'),
+      openai('Generate Post'),
       code('Keep Generated Post',`${core}\n${generator}\nconst row=$('Prepare Generation').item.json.row; let result; try {if($json.error) throw new Error('Generation HTTP request failed.'); result={...normalizeGeneration($json,row),...blankResult('NOT_RUN')};} catch(e) {result={...row,...blankResult('ERROR',e.message),Generation_Status:'ERROR',Model_Output:''};} return {json:result};`),
       code('Keep Existing or Blocked Row',`const p=$json; return {json:{...p.row,Generation_Status:p.ready.status,Error:p.ready.reason||p.row.Error||''}};`),
     );
@@ -54,7 +61,7 @@ function build(name,{generate=false,judge=false}) {
       condition('Ready to Judge',"={{ $json.ready.status === 'OK' }}"),
       http('Call Jev','https://api.typesafe.ai/v1/systemone'),
       code('Normalize Jev Result',`${core}\nconst p=$('Prepare Jev Request').item.json; let result; try {if($json.error) throw new Error('Jev HTTP request failed.'); result=normalizeResponse($json);} catch(e){result=blankResult('ERROR',e.message);} return {json:{row:{...p.row,...result},request:p.reviewRequest}};`),
-      http('Independent LLM Review','https://openrouter.ai/api/v1/chat/completions'),
+      openai('Independent LLM Review'),
       code('Normalize Independent Review',`${core}\nconst row=$('Normalize Jev Result').item.json.row; let review; try {if($json.error) throw new Error('Independent review HTTP request failed.'); review=normalizeReview($json,row);} catch(e){review={LLM_Run_Status:'ERROR',LLM_Decision:'',LLM_Critique:'',Review_Required:true,Review_Reasons:'Independent critique unavailable.',Error:[row.Error,e.message].filter(Boolean).join('; ')};} return {json:{...row,...review}};`),
       code('Keep Unevaluated Row',`${core}\nconst p=$json; return {json:{...p.row,...blankResult(p.ready.status,p.ready.reason),Error:[p.row.Error,p.ready.status==='ERROR'?p.ready.reason:''].filter(Boolean).join('; ')}};`),
     );
@@ -67,7 +74,7 @@ function build(name,{generate=false,judge=false}) {
     connections['Human Review Results']={main:[edge('Download Posts CSV')]};
   }
   nodes.forEach((n,i)=>{n.position=[240+(i%5)*300,320+Math.floor(i/5)*260];if(n.type==='n8n-nodes-base.formTrigger')n.webhookId=formWebhookId(name);});
-  nodes.push(node('Start Here','stickyNote',{width:1150,height:220,content:'## Social media evaluation\nGenerate 10 posts, then mark PASS or FAIL for Factual Correctness, Clarity, Value / Insight, Engagement and Tone Fit. The workbook calculates Overall: all five PASS = PASS; any FAIL = FAIL.\n\nAttach OpenRouter Header Auth (Authorization: Bearer <OpenRouter API key>) to Generate Post and Independent LLM Review. Call Jev uses its own TypeSafe Header Auth (Authorization: Bearer <TypeSafe API key>). Never put keys in Code nodes.\n\nGeneration exports request ID, brief and post for Evaluation Log. Keep original posts and reviews; add reruns as new labelled rows in Evaluation Log. Save failed posts in Failure Traces and update Failure Analysis. Legacy dimension-judge results contain one row per dimension plus Overall; keep the downloaded CSV beside the workbook. The current optional category judge is Social Media LLM Category Judge.json. Judges never receive human labels or each other\'s answers. Failed calls are not quality FAILs. See docs/walkthrough.md.'},1));
+  nodes.push(node('Start Here','stickyNote',{width:1150,height:220,content:'## Social media evaluation\nGenerate 10 posts, then mark PASS or FAIL for Factual Correctness, Clarity, Value / Insight, Engagement and Tone Fit. The workbook calculates Overall: all five PASS = PASS; any FAIL = FAIL.\n\nAttach your OpenAI API credential to Generate Post (combined workflow only) and Independent LLM Review. Call Jev uses its own TypeSafe Header Auth (Authorization: Bearer <TypeSafe API key>). Never put keys in Code nodes.\n\nGeneration exports request ID, brief and post for Evaluation Log. Keep original posts and reviews; add reruns as new labelled rows in Evaluation Log. Save failed posts in Failure Traces and update Failure Analysis. Legacy dimension-judge results contain one row per dimension plus Overall; keep the downloaded CSV beside the workbook. The current optional category judge is Social Media LLM Category Judge.json. Judges never receive human labels or each other\'s answers. Failed calls are not quality FAILs.'},1));
   nodes.at(-1).position=[240,20];
   return {name,nodes,connections,active:false,pinData:{},settings:{executionOrder:'v1'}};
 }

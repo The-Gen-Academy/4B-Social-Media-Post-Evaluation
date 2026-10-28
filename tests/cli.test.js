@@ -8,7 +8,7 @@ import {stringify} from 'csv-stringify/sync';
 import {parse} from 'csv-parse/sync';
 import {row} from './fixtures.js';
 import {JUDGE_COLUMNS,workshopResult} from '../src/workshop.js';
-const run=args=>spawnSync(process.execPath,['--import',resolve('tests/mock-provider.js'),'src/cli.js',...args],{encoding:'utf8',env:{...process.env,JEV_PROVIDER:'openrouter',OPENROUTER_API_KEY:'mock-key'}});
+const run=args=>spawnSync(process.execPath,['--import',resolve('tests/mock-provider.js'),'src/cli.js',...args],{encoding:'utf8',env:{...process.env,JEV_PROVIDER:'typesafe',TYPESAFE_API_KEY:'mock-typesafe-key',OPENAI_API_KEY:'mock-openai-key'}});
 test('CLI round trip preserves human evidence, reports errors, and exports workbook contract',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'binary-eval-')),input=join(dir,'in.csv'),output=join(dir,'out.csv');
   await writeFile(input,stringify([row,{...row,Test_ID:'CASE_002',Model_Output:'BAD post'},{...row,Test_ID:'CASE_003',Model_Output:'API_ERROR'},{...row,Test_ID:'CASE_004',Model_Output:''},{...row,Test_ID:'CASE_005',Context_Status:'NEEDS_CONTEXT'}],{header:true}));

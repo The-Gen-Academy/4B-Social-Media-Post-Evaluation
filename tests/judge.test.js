@@ -66,5 +66,18 @@ test('confusion matrix denominators, coverage and split separation',()=>{
 });
 test('review transport rejects errors without exposing provider content',async()=>{
   await assert.rejects(callReview({}, {apiKey:'test',fetchImpl:async()=>new Response('secret',{status:401})}),/^Error: Independent LLM HTTP 401$/);
-  await assert.rejects(callReview({}, {apiKey:''}),/OPENROUTER_API_KEY/);
+  await assert.rejects(callReview({}, {apiKey:''}),/OPENAI_API_KEY/);
+});
+test('independent review sends the unprefixed model directly to OpenAI',async()=>{
+  const request=buildReviewRequest(row);
+  assert.equal(request.model,'gpt-4.1-mini');
+  assert.equal(buildGenerationRequest(row).model,'gpt-4.1-mini');
+  const response=await callReview(request,{apiKey:'openai-test-key',fetchImpl:async(url,options)=>{
+    assert.equal(url,'https://api.openai.com/v1/chat/completions');
+    assert.equal(options.headers.Authorization,'Bearer openai-test-key');
+    assert.equal(options.redirect,'error');
+    assert.deepEqual(JSON.parse(options.body),request);
+    return Response.json(reviewFor());
+  }});
+  assert.equal(normalizeReview(response,row).LLM_Run_Status,'OK');
 });

@@ -22,6 +22,12 @@ for(const file of files) test(file+' has valid graph, no shipped secrets, and ex
   const w=JSON.parse(await readFile(file,'utf8')),names=new Set(w.nodes.map(n=>n.name));
   assert.equal(w.active,false);assert.deepEqual(w.pinData,{});
   for(const n of w.nodes){assert(!n.credentials);if(n.type.endsWith('.code'))new vm.Script('(function(){'+n.parameters.jsCode+'})()');}
+  for(const n of w.nodes.filter(n=>['Generate Post','Independent LLM Review'].includes(n.name))){
+    assert.equal(n.parameters.url,'https://api.openai.com/v1/chat/completions');
+    assert.equal(n.parameters.authentication,'predefinedCredentialType');
+    assert.equal(n.parameters.nodeCredentialType,'openAiApi');
+    assert.equal(n.parameters.genericAuthType,undefined);
+  }
   for(const [from,edges] of Object.entries(w.connections)){assert(names.has(from));for(const outputs of Object.values(edges))for(const group of outputs)for(const edge of group)assert(names.has(edge.node));}
   // The restored creator/critic workflow has its own CSV loop, exercised below.
   if(file===files[0])return;
@@ -37,10 +43,12 @@ for(const file of files) test(file+' has valid graph, no shipped secrets, and ex
   const duplicate=exec('Validate Row Identity',null,[workshopResult(row),workshopResult(row)]);assert(duplicate.every(r=>r.json.__identity_error));
   if(names.has('Prepare Generation')){
     const p=exec('Prepare Generation',{...row,Model_Output:''});assert.equal(p.json.ready.status,'READY');
+    assert.equal(p.json.request.model,'gpt-4.1-mini');
     const generated=exec('Keep Generated Post',{choices:[{finish_reason:'stop',message:{content:'New post'}}]});assert.equal(generated.json.Human_Decision,'');assert.equal(generated.json.Jev_Decision,'');
   }
   if(names.has('Prepare Jev Request')){
     const p=exec('Prepare Jev Request',row);assert.equal(p.json.ready.status,'OK');assert.equal(p.json.request.questions.Factual_Correctness.type,'choice');
+    assert.equal(p.json.reviewRequest.model,'gpt-4.1-mini');
     assert.equal(p.json.request.model,'jev-1.13.0');assert.equal(w.nodes.find(n=>n.name==='Call Jev').parameters.url,'https://api.typesafe.ai/v1/systemone');
     const jev=exec('Normalize Jev Result',responseFor('FAIL'));assert.equal(jev.json.row.Jev_Decision,'FAIL');assert(!JSON.stringify(jev.json.request).includes('Human_Critique'));
     const llm=exec('Normalize Independent Review',reviewFor());assert.equal(llm.json.Jev_Decision,'FAIL');assert.equal(llm.json.LLM_Decision,'PASS');assert.equal(llm.json.Review_Required,true);
@@ -60,7 +68,6 @@ test('original generator uses the original OpenAI creator and critic prompts and
   const byName=name=>w.nodes.find(node=>node.name===name);
   const links=(name,type='main')=>w.connections[name][type].map(group=>group.map(edge=>edge.node));
   assert.equal(w.nodes.length,16);
-  assert(!JSON.stringify(w).includes('openrouter'));
   for(const [modelNode,model,agent] of [
     ['OpenAI Chat Model','gpt-5.5-pro','LinkedIn Creator Agent1'],
     ['OpenAI Chat Model1','gpt-5-mini','LinkedIn Critic Agent1'],

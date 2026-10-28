@@ -1,6 +1,6 @@
 import {DIMENSIONS} from './rubric.js';
 export const GENERATOR_VERSION = 'generator-v3';
-export const GENERATOR_MODEL = 'openai/gpt-4.1-mini';
+export const GENERATOR_MODEL = 'gpt-4.1-mini';
 // Keep the evaluation rubric fixed while testing a generator prompt change.
 export const GENERATOR_PROMPT = `ROLE
 You are a professional LinkedIn editor writing for the audience specified in the brief.

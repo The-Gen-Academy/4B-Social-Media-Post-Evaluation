@@ -3,7 +3,7 @@ import {DIMENSIONS, POLICY, RUBRIC_VERSION, overallDecision} from './rubric.js';
 export {RUBRIC_VERSION, POLICY} from './rubric.js';
 export const JUDGE_VERSION = 'jev-dimensions-v4.0';
 export const DEFAULT_MODEL = 'jev-1.13.0';
-export const REVIEW_MODEL = 'openai/gpt-4.1-mini';
+export const REVIEW_MODEL = 'gpt-4.1-mini';
 export function clean(value) { return String(value ?? '').trim(); }
 export function eligibility(row) {
   if (row.Generation_Status === 'ERROR') return { status: 'ERROR', reason: row.Error || 'Generation failed.' };

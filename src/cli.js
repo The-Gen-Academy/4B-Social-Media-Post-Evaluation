@@ -8,9 +8,9 @@ import { callReview } from './review-client.js';
 import { JUDGE_COLUMNS, workshopInput, judgeResult } from './workshop.js';
 import { buildRequest, buildReviewRequest, normalizeResponse, normalizeReview, blankResult, summarize, prepareRows, eligibility, REVIEW_MODEL } from './judge.js';
 const usage = `Usage: npm run judge -- --input posts.csv --output results/baseline.csv
-  --provider openrouter     Jev provider: openrouter (default), typesafe, gateway
+  --provider typesafe       Jev provider: typesafe (default), gateway
   --model MODEL             Jev model override
-  --review-model MODEL      Independent LLM reviewer on OpenRouter
+  --review-model MODEL      Independent LLM reviewer via OpenAI
   --dry-run                 Export requests without API calls
   --workshop                Export the Judge-tab rows; save details separately
   --report-only             Report by run, judge version, model and split
@@ -38,7 +38,7 @@ async function main() {
     const details = (await readFile(`${input}.details.jsonl`,'utf8')).trim();
     return console.log(JSON.stringify(summarize(details ? details.split('\n').map(line=>JSON.parse(line)) : []),null,2));
   }
-  const provider = values.provider || process.env.JEV_PROVIDER || 'openrouter';
+  const provider = values.provider || process.env.JEV_PROVIDER || 'typesafe';
   const model = values.model || process.env.JEV_MODEL || providerConfig(provider).model;
   const reviewModel = values['review-model'] || process.env.REVIEW_MODEL || REVIEW_MODEL;
   await mkdir(dirname(output),{recursive:true});
@@ -47,7 +47,7 @@ async function main() {
     await writeFile(`${output}.requests.jsonl`,requests.map(r=>JSON.stringify(r)).join('\n')+'\n',{flag:'wx'});
     return console.log(`Dry run: ${requests.length} rows; no API calls.`);
   }
-  if (rows.some(row => eligibility(row).status === 'OK')) { resolveConnection({provider}); if (!process.env.OPENROUTER_API_KEY?.trim()) throw new Error('Set OPENROUTER_API_KEY for the independent LLM critique.'); }
+  if (rows.some(row => eligibility(row).status === 'OK')) { resolveConnection({provider}); if (!process.env.OPENAI_API_KEY?.trim()) throw new Error('Set OPENAI_API_KEY for the independent LLM critique.'); }
   await writeFile(output,'',{flag:'wx'});
   await writeFile(`${output}.summary.json`,'',{flag:'wx'});
   await writeFile(`${output}.details.jsonl`,'',{flag:'wx'});

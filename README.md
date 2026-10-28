@@ -8,7 +8,7 @@ Study the worked examples, then run the n8n workflow to generate 10 posts from y
 
 * Make a copy of the [workbook](https://docs.google.com/spreadsheets/d/1y8-rCXo2-tBDPf2kIZxWRDzSK2z9gwZWpdYbZqiJoqI/edit).
 * Download the [generation workflow](Social%20Media%20Post%20Generation%20Workflow.json). You will supply ten inputs of your own.
-* Follow the [n8n setup guide](docs/walkthrough.md). Generation uses an OpenAI API key. The optional failure-category judge uses an OpenAI API key.
+* Import the workflow into n8n and select your OpenAI API credential. All LLM generation and judging calls use OpenAI directly.
 
 The generation workflow restores the earliest creator/critic flow from [commit 5ce7666](https://github.com/The-Gen-Academy/4B-Social-Media-Post-Evaluation/commit/5ce766661130e0fc8adec89702f1ada71c43f5f7): **Upload CSV → Creator → Critic → revision check → output CSV**. Both model nodes call OpenAI directly. The original defaults are `gpt-5.5-pro` for creation and `gpt-5-mini` for critique; choose an available OpenAI model in each node if needed. Select your own credentials after import. The exported workflow is inactive and contains no account credential references.
 
@@ -82,7 +82,7 @@ Clarify the definition or contrast rule, save the previous results, and rerun th
 
 ### Older Jev experiment
 
-[Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json) and the combined generation workflow remain available as an advanced, separate five-dimension experiment. They use TypeSafe for Jev and OpenRouter for the independent LLM. They are not required for the one-category OpenAI exercise. See [the older integration guide](docs/jev-integration.md).
+[Social Media Jev Judge Only.json](Social%20Media%20Jev%20Judge%20Only.json) and the combined generation workflow remain available as an advanced, separate five-dimension experiment. They use TypeSafe for Jev and OpenAI for the independent LLM (`gpt-4.1-mini`). Attach an OpenAI API credential to **Independent LLM Review** and **Generate Post** (combined workflow only). Attach a TypeSafe Header Auth credential (`Authorization: Bearer <TypeSafe API key>`) to **Call Jev**. For the CLI, set `TYPESAFE_API_KEY` and `OPENAI_API_KEY` in `.env`; `.env.example` lists the options.
 
 ## What to submit
 
@@ -93,4 +93,4 @@ Clarify the definition or contrast rule, save the previous results, and rerun th
 
 ## For maintainers
 
-`src/rubric.js` holds the five-dimension policy. The base workflow keeps its original creator prompt in **LinkedIn Creator Agent1** and is not regenerated. `src/generation.js` holds the generator prompt for the separate combined Jev experiment. `src/category-judge.js` holds the one-category OpenAI prompt and comparison. `src/judge.js` supports the older Jev experiment. Run `npm ci`, `npm run build:workflows` and `npm test` after edits. See [validation](docs/validation.md) and the [category judge guide](docs/category-judge.md).
+`src/rubric.js` holds the five-dimension policy. The base workflow keeps its original creator prompt in **LinkedIn Creator Agent1** and is not regenerated. `src/generation.js` holds the generator prompt for the separate combined Jev experiment. `src/category-judge.js` holds the one-category OpenAI prompt and comparison. `src/judge.js` supports the older Jev experiment. Run `npm ci`, `npm run build:workflows` and `npm test` after edits.
